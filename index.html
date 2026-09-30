@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スイカン 面接評価フォーム（未経験者用）</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1d4ed8; --bg:#f5f7fa; --card:#ffffff;
+    --border:#e2e8f0; --text:#1e293b; --muted:#64748b; --danger:#dc2626; --ok:#16a34a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+  header{background:var(--blue);color:#fff;padding:20px 16px;}
+  header h1{margin:0;font-size:1.25rem;}
+  header p{margin:6px 0 0;font-size:0.85rem;opacity:0.9;}
+  nav.top{max-width:760px;margin:0 auto;padding:10px 16px 0;display:flex;gap:12px;}
+  nav.top a{color:#fff;opacity:0.85;text-decoration:none;font-size:0.85rem;border-bottom:2px solid transparent;padding-bottom:8px;}
+  nav.top a.active{opacity:1;border-color:#fff;font-weight:bold;}
+  main{max-width:760px;margin:0 auto;padding:20px 16px 80px;}
+  section.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:18px;}
+  section.card h2{margin:0 0 14px;font-size:1.05rem;border-left:4px solid var(--blue);padding-left:10px;}
+  .field{margin-bottom:16px;}
+  .field label.title{display:block;font-weight:600;margin-bottom:6px;font-size:0.95rem;}
+  .field .help{white-space:pre-wrap;font-size:0.8rem;color:var(--muted);margin:4px 0 8px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:8px 10px;}
+  input[type=text],input[type=date],textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:0.95rem;font-family:inherit;}
+  textarea{min-height:64px;resize:vertical;}
+  .scale{display:flex;gap:8px;flex-wrap:wrap;}
+  .scale label{flex:1;min-width:56px;text-align:center;border:1px solid var(--border);border-radius:6px;padding:10px 4px;cursor:pointer;font-size:0.85rem;user-select:none;}
+  .scale input{display:none;}
+  .scale input:checked + span{display:block;}
+  .scale label.sel{background:var(--blue);color:#fff;border-color:var(--blue-dark);}
+  .scale small{display:block;color:var(--muted);font-size:0.7rem;margin-top:2px;}
+  .scale-caption{display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-top:4px;}
+  button.submit{width:100%;background:var(--blue);color:#fff;border:none;padding:14px;font-size:1rem;border-radius:8px;cursor:pointer;font-weight:bold;}
+  button.submit:disabled{opacity:0.6;cursor:default;}
+  button.submit:hover:not(:disabled){background:var(--blue-dark);}
+  .msg{margin-top:14px;padding:12px 14px;border-radius:8px;font-size:0.9rem;display:none;}
+  .msg.ok{background:#ecfdf5;color:var(--ok);border:1px solid #bbf7d0;}
+  .msg.err{background:#fef2f2;color:var(--danger);border:1px solid #fecaca;}
+  .result-box{margin-top:16px;padding:16px;border-radius:8px;background:#f8fafc;border:1px solid var(--border);display:none;}
+  .result-box h3{margin:0 0 8px;font-size:1rem;}
+  .result-row{display:flex;justify-content:space-between;font-size:0.9rem;padding:4px 0;border-bottom:1px dashed var(--border);}
+  .required{color:var(--danger);font-size:0.8rem;margin-left:4px;}
+</style>
+</head>
+<body>
+<header>
+  <nav class="top"><a href="index.html" class="active">評価入力</a><a href="results.html">結果一覧（管理者用）</a></nav>
+  <h1>スイカン 面接評価フォーム（未経験者用）</h1>
+  <p>面接官はログイン不要で入力できます。送信すると自動で採点・DISCタイプ判定が行われます。</p>
+</header>
+<main>
+  <form id="evalForm">
+
+    <section class="card">
+      <h2>候補者情報</h2>
+      <div class="field">
+        <label class="title">候補者氏名<span class="required">必須</span></label>
+        <input type="text" id="candidate_name" required>
+      </div>
+      <div class="field">
+        <label class="title">面接日<span class="required">必須</span></label>
+        <input type="date" id="interview_date" required>
+      </div>
+      <div class="field">
+        <label class="title">面接官名<span class="required">必須</span></label>
+        <input type="text" id="interviewer_name" required>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>標準質問10選</h2>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;">各質問のメモ欄に、回答内容や気づいた点を記入してください。評価観点・高評価/要注意の目安は各項目の説明を参照。</p>
+      <div id="qContainer"></div>
+    </section>
+
+    <section class="card">
+      <h2>評価シート（8項目・5段階評価）</h2>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;">各項目を1〜5点で評価してください（5=非常に良い、3=標準、1=要注意）。</p>
+      <div id="critContainer"></div>
+    </section>
+
+    <section class="card">
+      <h2>DISC（行動特性）簡易チェック</h2>
+      <p style="font-size:0.85rem;color:var(--muted);margin-top:-8px;">面接中の言動をもとに、各項目にどの程度当てはまるかを1〜5点で評価してください。</p>
+      <div id="discContainer"></div>
+    </section>
+
+    <button type="submit" class="submit" id="submitBtn">送信する</button>
+    <div class="msg ok" id="okMsg"></div>
+    <div class="msg err" id="errMsg"></div>
+
+    <div class="result-box" id="resultBox">
+      <h3>自動採点結果</h3>
+      <div class="result-row"><span>加重合計点(50点満点)</span><strong id="r_total"></strong></div>
+      <div class="result-row"><span>得点率</span><strong id="r_pct"></strong></div>
+      <div class="result-row"><span>最低得点(8項目中)</span><strong id="r_min"></strong></div>
+      <div class="result-row"><span>合否判定</span><strong id="r_judge"></strong></div>
+      <div class="result-row"><span>DISCタイプ</span><strong id="r_type"></strong></div>
+      <p id="r_profile" style="font-size:0.85rem;margin-top:10px;"></p>
+    </div>
+  </form>
+</main>
+
+<script>
+const SQ = [
+  ["Q1. これまでのお仕事の中で、今回のような現場作業の仕事に興味を持ったきっかけを教えてください。",
+   "評価観点：⑤向上心・成長ポテンシャル（志望動機の一貫性）\n高評価(5点)例：きっかけ・理由を自分の言葉で具体的に語れ、当社の仕事内容への理解が伴っている。\n要注意(1点)サイン：きっかけが曖昧で、深掘りしても「なんとなく」「求人を見て」の域を出ない。"],
+  ["Q2. 未経験の分野に飛び込むことについて、不安に感じている点があれば教えてください。",
+   "評価観点：①素直さ・受容力\n高評価(5点)例：不安な点を具体的に言語化でき、それに対して自分なりの向き合い方を持っている。\n要注意(1点)サイン：「不安はない」「考えたことがない」と即答し、深掘りしても具体性が出ない。"],
+  ["Q3. これまでのお仕事で、年下の先輩や上司から指導を受けた経験はありますか。そのときどう感じ、どのように対応しましたか。",
+   "評価観点：①素直さ・受容力／③協調性（ミドル世代特有の適応力を確認）\n高評価(5点)例：年下からの指導を前向きに受け止め、行動を変えた具体的エピソードを語れる。\n要注意(1点)サイン：「年下に言われるのは抵抗がある」等の発言、または経験がないと即答し深掘りできない。"],
+  ["Q4. これまでのお仕事で、一番大変だった出来事と、それをどのように乗り越えたかを教えてください。",
+   "評価観点：④責任感・やり抜く力\n高評価(5点)例：困難な状況でも最後までやり切った、具体的な行動とともに語れる。\n要注意(1点)サイン：エピソードが抽象的で、途中で投げ出した経験に反省が見られない。"],
+  ["Q5. チームで仕事を進める中で、意見の違う相手とどのように折り合いをつけてきましたか。",
+   "評価観点：③協調性・チームワーク\n高評価(5点)例：相手の立場に配慮した折り合いの付け方を、具体的な行動とともに語れる。\n要注意(1点)サイン：「特にない」「自分のやり方を通した」等、協調性に欠ける発言が目立つ。"],
+  ["Q6. 決められたルールや手順を守ることについて、どのように考えていますか。具体的なエピソードがあれば教えてください。",
+   "評価観点：⑥規範意識・安全遵守\n高評価(5点)例：ルールの意味を理解した上で自ら守り、周囲にも良い影響を与えた経験を語れる。\n要注意(1点)サイン：ルールを軽視する発言や、「状況による」で終始し具体性のない回答が続く。"],
+  ["Q7. 屋外での作業や体力を使う作業、高所・地下など特殊な環境での作業に対して、意欲や気になる点はありますか。",
+   "評価観点：職務遂行に必要な適性確認（体力面は業務内容に即した範囲に限定）\n高評価(5点)例：前向きな意欲を示しつつ、業務内容を現実的に理解した受け答えができる。\n要注意(1点)サイン：強い抵抗感や具体的な懸念が示され、深掘りしても解消されない。"],
+  ["Q8. この仕事に、どのくらいの期間しっかり腰を据えて取り組みたいと考えていますか。その理由も教えてください。",
+   "評価観点：⑧定着可能性・価値観の一致\n高評価(5点)例：長期就業への意欲とその理由を、自分の言葉で具体的に語れる。\n要注意(1点)サイン：期間へのこだわりが薄く、「とりあえず」「様子を見て」程度の回答に終始する。"],
+  ["Q9. 5年後、10年後、どのような働き方・生き方をしていたいですか。",
+   "評価観点：⑤向上心・成長ポテンシャル／⑧定着可能性\n高評価(5点)例：将来像を具体的に描けており、当社での成長と結び付けて語れる。\n要注意(1点)サイン：将来像がほとんどなく、当社の仕事内容と関連のない回答に終始する。"],
+  ["Q10. 給与や働き方の面も含め、今回の転職でどのようなことを大切にしたいと考えていますか。",
+   "評価観点：⑧定着可能性・価値観の一致（条件面の期待値ギャップ確認）\n高評価(5点)例：給与以外の要素（成長・安定・働きがい等）にも言及し、当社の条件と大きな乖離がない。\n要注意(1点)サイン：給与・待遇の話のみに終始し、当社が提示できる条件と明らかに乖離している。"]
+];
+
+const CRITERIA = [
+  ["①　素直さ・受容力（ウエイト1.5）", "指摘やアドバイスを前向きに受け止め、行動を変えられるか。\n5点:指摘を前向きに受け止め、具体的に行動を改善した経験を実例とともに語れる。\n3点:指摘を受け止める姿勢は見られるが、具体的なエピソードがやや弱い。\n1点:指摘に対して防御的・他責的な反応が見られる。", 1.5],
+  ["②　誠実さ・正直さ（ウエイト1.5）", "できないことやミスを隠さず、事実をそのまま伝えられるか。\n5点:ミスや弱みを隠さず、事実をそのまま伝える姿勢が具体的なエピソードで裏付けられている。\n3点:誠実に対応しようとする意識は感じられるが具体性にやや欠ける。\n1点:誤魔化しや取り繕おうとする姿勢が見える。", 1.5],
+  ["③　協調性・チームワーク（ウエイト1.0）", "先輩・チーム、施主や管理会社等との対人対応を円滑に行えるか。\n5点:チームの中での自分の役割を理解し、相手の立場に配慮した協力の仕方を具体的に語れる。\n3点:協力する姿勢はあるがエピソードがやや一般的。\n1点:一人で抱え込みそうな様子や協力への抵抗感が見られる。", 1.0],
+  ["④　責任感・やり抜く力（ウエイト1.0）", "最後までやり切る責任感があるか。困難な場面での粘り強さ。\n5点:困難な状況でも最後までやり切った経験を具体的な行動とともに語れる。\n3点:責任を持って取り組む姿勢はあるがやり抜いた経験の具体性がやや弱い。\n1点:責任感や当事者意識が感じられない。", 1.0],
+  ["⑤　向上心・成長ポテンシャル（ウエイト1.5）", "未経験からの成長意欲。試行錯誤を楽しめるか。\n5点:未経験分野への挑戦や自発的な学習の具体例があり、試行錯誤の過程も前向きに捉えている。\n3点:学ぶ意欲は感じられるが具体的なエピソードがやや乏しい。\n1点:挑戦や学習意欲を感じさせるエピソードが語られない。", 1.5],
+  ["⑥　規範意識・安全遵守（ウエイト1.0）", "ルールや安全手順を守る意識があるか。\n5点:ルールの意味を理解した上で自ら守り、周囲にも良い影響を与えた経験を語れる。\n3点:ルールを守る意識はあるが具体的なエピソードがやや一般的。\n1点:ルールを軽視する発言や自己流に解釈する傾向がうかがえる。", 1.0],
+  ["⑦　コミュニケーション力（ウエイト1.0）", "初対面の相手や価値観の異なる相手とも円滑にやり取りできるか。\n5点:相手の立場に配慮した聞き方・伝え方ができ、初対面でも関係を築ける具体例がある。\n3点:受け答えは自然だが具体例がやや弱い。\n1点:質問の意図とかみ合わない受け答えが目立つ。", 1.0],
+  ["⑧　定着可能性・価値観の一致（ウエイト1.5）", "仕事に何を求めているか、当社の育成方針・仕事内容と価値観が合うか。\n5点:成長実感を得るために大切にしたいことを具体的に語れ、長期就業への意欲とその理由が明確。\n3点:長く働きたい意欲はあるが理由がやや曖昧。\n1点:長期就業への意欲や理由が明確でない。", 1.5]
+];
+
+const DISC = [
+  ["D（主導型）-1", "話の要点を絞り、結論から先に話す傾向が見られる（回りくどい説明より結論を優先する）。", "d1"],
+  ["D（主導型）-2", "決断や意思表示が早く、はっきりしている。", "d2"],
+  ["D（主導型）-3", "目標達成や成果への意欲を、自分の言葉で強く語る。", "d3"],
+  ["I（感化型）-1", "表情が明るく、話に感情表現が豊かである。", "i1"],
+  ["I（感化型）-2", "初対面でも打ち解けやすく、場を和ませるような話し方をする。", "i2"],
+  ["I（感化型）-3", "人との関わりやチームの雰囲気を大切にする発言が多い。", "i3"],
+  ["S（安定型）-1", "落ち着いた口調で、じっくり考えてから話す。", "s1"],
+  ["S（安定型）-2", "変化よりも安定・継続を大事にする発言が多い。", "s2"],
+  ["S（安定型）-3", "聞き役に回ることが多く、協調的な姿勢が見える。", "s3"],
+  ["C（慎重型）-1", "質問に対して具体的な数字や根拠を挙げ、丁寧に答える。", "c1"],
+  ["C（慎重型）-2", "手順やルール、正確さを重視する発言が多い。", "c2"],
+  ["C（慎重型）-3", "即答を避け、慎重に考えてから行動・発言する傾向が見える。", "c3"]
+];
+
+const DISC_PROFILES = {
+  "D（主導型）": "この人は、スピード感を持って物事を進め、自分で決めて行動することを好むタイプです。結論から話し、要点を絞って判断する傾向があります。指示を細かく出しすぎるより、目標とゴールを明確に伝えたうえで裁量を持たせると力を発揮しやすく、当社の緊急対応業務のように「自分で判断して動く」場面で強みになる可能性があります。一方で、手順の細かい説明を省略しがちな面もあるため、安全手順は明文化して念押しすると良い関わり方になります。",
+  "I（感化型）": "この人は、人当たりが良く、周囲を明るくする力を持つタイプです。初対面でも打ち解けやすく、場の雰囲気をつくるのが得意な傾向があります。お客様（施主・管理会社等）対応や、後輩への声かけなど対人場面で力を発揮しやすい一方、一人で黙々と作業が続く時間が長いと意欲が下がることがあるため、こまめな声かけやチームでの関わりを意識すると定着しやすくなります。",
+  "S（安定型）": "この人は、落ち着いて着実に物事を進めることを好むタイプです。急な変化よりも、決まった手順の中でコツコツ取り組むことに安心感を持ちやすい傾向があります。丁寧なOJTと安定した環境のもとで力を発揮しやすく、長期的な信頼関係を築きながら育成すると定着につながりやすいタイプです。変化や新しい役割を求めるときは、事前に十分な説明と準備期間を設けると良い関わり方になります。",
+  "C（慎重型）": "この人は、正確さや根拠を大切にし、慎重に考えてから行動するタイプです。質問に対して具体的な数字や理由を添えて答える傾向があり、曖昧な指示より基準や手順が明確な方が力を発揮しやすい傾向があります。水質検査など正確性が求められる作業や安全確認の場面と相性が良い可能性がある一方、即断即決を求めすぎると本来の力が出にくいため、考える時間を確保する関わり方が適しています。"
+};
+
+function buildScale(container, name, lowLabel, highLabel){
+  const wrap = document.createElement('div');
+  wrap.className = 'scale';
+  for(let v=1; v<=5; v++){
+    const id = name + '_' + v;
+    const label = document.createElement('label');
+    label.setAttribute('for', id);
+    label.innerHTML = v + (v===1?'<small>'+lowLabel+'</small>':v===5?'<small>'+highLabel+'</small>':'');
+    const input = document.createElement('input');
+    input.type = 'radio'; input.name = name; input.value = v; input.id = id; input.required = true;
+    input.addEventListener('change', () => {
+      wrap.querySelectorAll('label').forEach(l => l.classList.remove('sel'));
+      label.classList.add('sel');
+    });
+    label.prepend(input);
+    wrap.appendChild(label);
+  }
+  container.appendChild(wrap);
+}
+
+const qContainer = document.getElementById('qContainer');
+SQ.forEach((q, i) => {
+  const div = document.createElement('div');
+  div.className = 'field';
+  div.innerHTML = `<label class="title">${q[0]}</label><div class="help">${q[1]}</div><textarea id="q${i+1}" placeholder="回答内容・気づいた点をメモ"></textarea>`;
+  qContainer.appendChild(div);
+});
+
+const critContainer = document.getElementById('critContainer');
+CRITERIA.forEach((c, i) => {
+  const div = document.createElement('div');
+  div.className = 'field';
+  div.innerHTML = `<label class="title">${c[0]}<span class="required">必須</span></label><div class="help">${c[1]}</div>`;
+  critContainer.appendChild(div);
+  buildScale(div, 'crit' + (i+1), '要注意', '非常に良い');
+});
+
+const discContainer = document.getElementById('discContainer');
+DISC.forEach((d) => {
+  const div = document.createElement('div');
+  div.className = 'field';
+  div.innerHTML = `<label class="title">${d[0]}<span class="required">必須</span></label><div class="help">${d[1]}</div>`;
+  discContainer.appendChild(div);
+  buildScale(div, 'disc_' + d[2], '当てはまらない', 'よく当てはまる');
+});
+
+function getScale(name){
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? Number(el.value) : null;
+}
+
+document.getElementById('evalForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const okMsg = document.getElementById('okMsg');
+  const errMsg = document.getElementById('errMsg');
+  okMsg.style.display = 'none';
+  errMsg.style.display = 'none';
+  document.getElementById('resultBox').style.display = 'none';
+
+  if(!SUPABASE_URL || SUPABASE_URL.indexOf('YOUR_') === 0){
+    errMsg.textContent = 'アプリの設定が未完了です（config.js にSupabaseの接続情報を入力してください）。';
+    errMsg.style.display = 'block';
+    return;
+  }
+
+  const critVals = [];
+  for(let i=1;i<=8;i++){
+    const v = getScale('crit'+i);
+    if(v === null){ errMsg.textContent = '評価シートの8項目すべてに回答してください。'; errMsg.style.display='block'; return; }
+    critVals.push(v);
+  }
+  const discKeys = ['d1','d2','d3','i1','i2','i3','s1','s2','s3','c1','c2','c3'];
+  const discVals = {};
+  for(const k of discKeys){
+    const v = getScale('disc_'+k);
+    if(v === null){ errMsg.textContent = 'DISCチェックの12項目すべてに回答してください。'; errMsg.style.display='block'; return; }
+    discVals[k] = v;
+  }
+
+  const weights = [1.5,1.5,1.0,1.0,1.5,1.0,1.0,1.5];
+  let total = 0, minScore = 99;
+  critVals.forEach((v,i) => { total += v*weights[i]; if(v<minScore) minScore = v; });
+  total = Math.round(total*10)/10;
+  const pct = Math.round((total/50)*1000)/10;
+  const judge = (total >= 30 && minScore >= 2) ? '◎ 合格基準を満たしています' : '△ 要検討（基準未達の項目があります）';
+
+  const dSum = discVals.d1+discVals.d2+discVals.d3;
+  const iSum = discVals.i1+discVals.i2+discVals.i3;
+  const sSum = discVals.s1+discVals.s2+discVals.s3;
+  const cSum = discVals.c1+discVals.c2+discVals.c3;
+  let type;
+  if(dSum>=iSum && dSum>=sSum && dSum>=cSum) type = 'D（主導型）';
+  else if(iSum>=sSum && iSum>=cSum) type = 'I（感化型）';
+  else if(sSum>=cSum) type = 'S（安定型）';
+  else type = 'C（慎重型）';
+  const profile = DISC_PROFILES[type];
+
+  const row = {
+    candidate_name: document.getElementById('candidate_name').value,
+    interview_date: document.getElementById('interview_date').value,
+    interviewer_name: document.getElementById('interviewer_name').value,
+    q1: document.getElementById('q1').value, q2: document.getElementById('q2').value,
+    q3: document.getElementById('q3').value, q4: document.getElementById('q4').value,
+    q5: document.getElementById('q5').value, q6: document.getElementById('q6').value,
+    q7: document.getElementById('q7').value, q8: document.getElementById('q8').value,
+    q9: document.getElementById('q9').value, q10: document.getElementById('q10').value,
+    crit1: critVals[0], crit2: critVals[1], crit3: critVals[2], crit4: critVals[3],
+    crit5: critVals[4], crit6: critVals[5], crit7: critVals[6], crit8: critVals[7],
+    disc_d1: discVals.d1, disc_d2: discVals.d2, disc_d3: discVals.d3,
+    disc_i1: discVals.i1, disc_i2: discVals.i2, disc_i3: discVals.i3,
+    disc_s1: discVals.s1, disc_s2: discVals.s2, disc_s3: discVals.s3,
+    disc_c1: discVals.c1, disc_c2: discVals.c2, disc_c3: discVals.c3,
+    weighted_total: total, score_pct: pct, min_score: minScore, judge: judge,
+    disc_d_total: dSum, disc_i_total: iSum, disc_s_total: sSum, disc_c_total: cSum,
+    disc_type: type, disc_profile: profile
+  };
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '送信中...';
+
+  try{
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { error } = await client.from('evaluations').insert([row]);
+    if(error) throw error;
+
+    okMsg.textContent = '送信が完了しました。結果は下に表示されています。';
+    okMsg.style.display = 'block';
+
+    document.getElementById('r_total').textContent = total + ' 点';
+    document.getElementById('r_pct').textContent = pct + ' %';
+    document.getElementById('r_min').textContent = minScore + ' 点';
+    document.getElementById('r_judge').textContent = judge;
+    document.getElementById('r_type').textContent = type;
+    document.getElementById('r_profile').textContent = profile;
+    document.getElementById('resultBox').style.display = 'block';
+
+    document.getElementById('evalForm').reset();
+    document.querySelectorAll('.scale label.sel').forEach(l => l.classList.remove('sel'));
+    window.scrollTo({top: document.getElementById('resultBox').offsetTop - 20, behavior:'smooth'});
+  }catch(err){
+    console.error(err);
+    errMsg.textContent = '送信に失敗しました: ' + (err.message || err);
+    errMsg.style.display = 'block';
+  }finally{
+    submitBtn.disabled = false;
+    submitBtn.textContent = '送信する';
+  }
+});
+</script>
+</body>
+</html>
