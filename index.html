@@ -67,8 +67,11 @@
   .q-callout-icon{flex-shrink:0;font-weight:800;}
   .q-callout strong{display:block;font-size:0.72rem;margin-bottom:2px;}
   .q-card textarea{margin-left:38px;width:calc(100% - 38px);}
+  .q-score-row{margin:0 0 10px 38px;}
+  .q-score-label{display:block;font-size:0.72rem;font-weight:700;color:var(--ink-secondary);margin-bottom:6px;}
+  .q-score-row .scale label{padding:7px 4px;font-size:0.8rem;}
   @media (max-width:480px){
-    .q-eval-tag,.q-callouts{margin-left:0;}
+    .q-eval-tag,.q-callouts,.q-score-row{margin-left:0;}
     .q-card textarea{margin-left:0;width:100%;}
   }
 
@@ -238,7 +241,8 @@ const DISC_PROFILES = {
   "C（慎重型）": "この人は、正確さや根拠を大切にし、慎重に考えてから行動するタイプです。質問に対して具体的な数字や理由を添えて答える傾向があり、曖昧な指示より基準や手順が明確な方が力を発揮しやすい傾向があります。水質検査など正確性が求められる作業や安全確認の場面と相性が良い可能性がある一方、即断即決を求めすぎると本来の力が出にくいため、考える時間を確保する関わり方が適しています。"
 };
 
-function buildScale(container, name, lowLabel, highLabel, selColor){
+function buildScale(container, name, lowLabel, highLabel, selColor, isRequired){
+  if(isRequired === undefined) isRequired = true;
   const wrap = document.createElement('div');
   wrap.className = 'scale';
   for(let v=1; v<=5; v++){
@@ -247,7 +251,7 @@ function buildScale(container, name, lowLabel, highLabel, selColor){
     label.setAttribute('for', id);
     label.innerHTML = v + (v===1?'<small>'+lowLabel+'</small>':v===5?'<small>'+highLabel+'</small>':'');
     const input = document.createElement('input');
-    input.type = 'radio'; input.name = name; input.value = v; input.id = id; input.required = true;
+    input.type = 'radio'; input.name = name; input.value = v; input.id = id; input.required = isRequired;
     input.addEventListener('change', () => {
       wrap.querySelectorAll('label').forEach(l => { l.classList.remove('sel'); l.style.background=''; l.style.borderColor=''; });
       label.classList.add('sel');
@@ -286,8 +290,13 @@ SQ.forEach((q, i) => {
       <div class="q-callout warn"><span class="q-callout-icon">△</span><div><strong>要注意（1点）サイン</strong>${help.warn}</div></div>
     </div>
     <textarea id="q${i+1}" placeholder="回答内容・気づいた点をメモ"></textarea>
+    <div class="q-score-row">
+      <span class="q-score-label">この回答の評価（任意・1〜5点）</span>
+      <div id="qScoreWrap${i+1}"></div>
+    </div>
   `;
   qContainer.appendChild(div);
+  buildScale(div.querySelector(`#qScoreWrap${i+1}`), 'q' + (i+1) + '_score', '要注意', '非常に良い', null, false);
 });
 
 const critContainer = document.getElementById('critContainer');
@@ -427,6 +436,10 @@ document.getElementById('evalForm').addEventListener('submit', async (e) => {
     q5: document.getElementById('q5').value, q6: document.getElementById('q6').value,
     q7: document.getElementById('q7').value, q8: document.getElementById('q8').value,
     q9: document.getElementById('q9').value, q10: document.getElementById('q10').value,
+    q1_score: getScale('q1_score'), q2_score: getScale('q2_score'), q3_score: getScale('q3_score'),
+    q4_score: getScale('q4_score'), q5_score: getScale('q5_score'), q6_score: getScale('q6_score'),
+    q7_score: getScale('q7_score'), q8_score: getScale('q8_score'), q9_score: getScale('q9_score'),
+    q10_score: getScale('q10_score'),
     crit1: critVals[0], crit2: critVals[1], crit3: critVals[2], crit4: critVals[3],
     crit5: critVals[4], crit6: critVals[5], crit7: critVals[6], crit8: critVals[7],
     disc_d1: discVals.d1, disc_d2: discVals.d2, disc_d3: discVals.d3,
