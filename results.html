@@ -92,6 +92,13 @@
 
   .disc-profile{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:0.85rem;color:var(--ink-secondary);margin-top:10px;}
 
+  /* ---- strengths / weaknesses (derived from 評価シート・標準質問, kept separate from DISC) ---- */
+  .sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .sw-box{border-radius:10px;padding:14px 16px;font-size:0.85rem;line-height:1.7;}
+  .sw-box .sw-label{display:block;font-size:0.72rem;font-weight:800;margin-bottom:6px;letter-spacing:0.03em;}
+  .sw-box.strengths{background:var(--good-bg);color:var(--good-text);}
+  .sw-box.weaknesses{background:var(--critical-bg);color:var(--critical-text);}
+
   /* ---- Q&A cards ---- */
   .qa-card{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
   .qa-card .q-label{background:#f1f5f9;padding:6px 12px;font-size:0.78rem;font-weight:700;color:var(--blue-dark);display:flex;justify-content:space-between;align-items:center;gap:8px;}
@@ -104,6 +111,7 @@
   @media (max-width:480px){
     .stat-row{grid-template-columns:1fr 1fr;}
     .bar-row{grid-template-columns:104px 1fr 36px;font-size:0.72rem;}
+    .sw-grid{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -168,6 +176,60 @@ const DISC_META = {
   'S（安定型）': {key:'S', color:'var(--cat-3)', total:'disc_s_total'},
   'C（慎重型）': {key:'C', color:'var(--cat-4)', total:'disc_c_total'},
 };
+
+const SQ_SHORT = SQ_LABELS.map(l => l.replace(/^Q\d+\.\s*/, ''));
+
+// 長所・短所は評価シート（8項目）と標準質問の点数のみから自動生成する（DISCのデータは一切使わない）
+const SW_STRENGTH_PHRASES = [
+  "指摘やアドバイスを前向きに受け止め、素直に行動を改善できる点",
+  "ミスや弱みを隠さず、誠実に向き合おうとする姿勢",
+  "周囲と協力しながらチームで物事を進められる協調性",
+  "最後までやり抜こうとする責任感の強さ",
+  "未経験の分野にも前向きに挑戦しようとする向上心",
+  "ルールや安全手順を大切にする規範意識",
+  "初対面の相手とも円滑にやり取りできるコミュニケーション力",
+  "長く働きたいという意欲と当社の考え方との親和性"
+];
+const SW_WEAKNESS_PHRASES = [
+  "指摘を素直に受け止める姿勢にやや弱さが見られる点",
+  "誠実さ・正直さの面でやや懸念が見られる点",
+  "チームでの協調性にやや不安が残る点",
+  "責任感・粘り強さの面でフォローが必要と思われる点",
+  "成長意欲や向上心がやや弱く感じられる点",
+  "ルール順守・安全意識の面でやや懸念がある点",
+  "コミュニケーション面でやや課題が見られる点",
+  "定着可能性や当社の考え方との親和性にやや不安がある点"
+];
+
+function buildStrengthsWeaknesses(critVals, qScores, qShortLabels){
+  const strengths = [];
+  const weaknesses = [];
+  critVals.forEach((v, i) => {
+    if(v === null || v === undefined) return;
+    if(v >= 4) strengths.push(SW_STRENGTH_PHRASES[i]);
+    else if(v <= 2) weaknesses.push(SW_WEAKNESS_PHRASES[i]);
+  });
+
+  const strongQ = [];
+  const weakQ = [];
+  (qScores || []).forEach((s, i) => {
+    if(s === null || s === undefined) return;
+    if(s >= 5) strongQ.push(qShortLabels[i]);
+    else if(s <= 1) weakQ.push(qShortLabels[i]);
+  });
+
+  let strengthsText = strengths.length
+    ? '評価シートでは、' + strengths.join('、') + 'といった点が強みとして挙げられます。'
+    : '評価シートの各項目は標準的な範囲内で、突出した強みは確認されませんでした。';
+  if(strongQ.length) strengthsText += ' また、標準質問「' + strongQ.join('」「') + '」の回答は特に高い評価でした。';
+
+  let weaknessesText = weaknesses.length
+    ? '評価シートでは、' + weaknesses.join('、') + 'といった点にやや懸念が見られます。'
+    : '評価シートの各項目に大きな懸念点は見られませんでした。';
+  if(weakQ.length) weaknessesText += ' また、標準質問「' + weakQ.join('」「') + '」の回答には特に注意が必要です。';
+
+  return { strengths: strengthsText, weaknesses: weaknessesText };
+}
 
 document.getElementById('loadBtn').addEventListener('click', loadResults);
 document.getElementById('pwInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') loadResults(); });
@@ -316,6 +378,20 @@ function showDetail(r){
     </div>
   `;
 
+  // ---- 長所・短所（評価シート・標準質問のみから自動生成、DISCとは完全に切り離して算出） ----
+  const critValsForSw = [r.crit1, r.crit2, r.crit3, r.crit4, r.crit5, r.crit6, r.crit7, r.crit8];
+  const qScoresForSw = [r.q1_score, r.q2_score, r.q3_score, r.q4_score, r.q5_score, r.q6_score, r.q7_score, r.q8_score, r.q9_score, r.q10_score];
+  const sw = buildStrengthsWeaknesses(critValsForSw, qScoresForSw, SQ_SHORT);
+  const swHtml = `
+    <div class="d-section">
+      <h3>長所・短所（評価シート・標準質問より自動生成）</h3>
+      <div class="sw-grid">
+        <div class="sw-box strengths"><span class="sw-label">長所</span>${escapeHtml(sw.strengths)}</div>
+        <div class="sw-box weaknesses"><span class="sw-label">短所</span>${escapeHtml(sw.weaknesses)}</div>
+      </div>
+    </div>
+  `;
+
   // ---- Q&A cards (memo + optional per-question score) ----
   let qaHtml = '';
   for(let i=1;i<=10;i++){
@@ -336,9 +412,10 @@ function showDetail(r){
       <div class="sub">${escapeHtml(r.interview_date)} ／ 面接官: ${escapeHtml(r.interviewer_name)}</div>
     </div>
     <div class="d-section">${statHtml}</div>
-    ${discHtml}
     ${critHtml}
+    ${swHtml}
     ${qaSection}
+    ${discHtml}
   `;
   document.getElementById('detailModal').classList.add('show');
   document.getElementById('closeDetail').addEventListener('click', () => {
