@@ -7,7 +7,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
-  :root{--blue:#2563eb;--blue-dark:#1d4ed8;--bg:#f5f7fa;--card:#ffffff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--danger:#dc2626;--ok:#16a34a;}
+  :root{
+    --blue:#2563eb;--blue-dark:#1d4ed8;--bg:#f5f7fa;--card:#ffffff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;
+    /* status palette (fixed, never themed) */
+    --good:#0ca30c;--good-bg:#e8f8e8;--good-text:#0a6b0a;
+    --critical:#d03b3b;--critical-bg:#fbeaea;--critical-text:#a52323;
+    /* categorical slots (fixed order — used for DISC identity D/I/S/C) */
+    --cat-1:#2a78d6; /* D */
+    --cat-2:#eb6834; /* I */
+    --cat-3:#1baf7a; /* S */
+    --cat-4:#c98500; /* C — darkened one step from #eda100 for label contrast */
+    /* sequential blue ramp (magnitude, 1→5) */
+    --seq-1:#86b6ef;--seq-2:#5598e7;--seq-3:#2a78d6;--seq-4:#1c5cab;--seq-5:#104281;
+    --ink-primary:#0b0b0b;--ink-secondary:#52514e;--ink-muted:#898781;
+  }
   *{box-sizing:border-box;}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
   header{background:var(--blue);color:#fff;padding:20px 16px;}
@@ -22,26 +35,69 @@
   .gate button{background:var(--blue);color:#fff;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:bold;}
   .gate button:hover{background:var(--blue-dark);}
   .msg{margin-top:12px;font-size:0.85rem;}
-  .msg.err{color:var(--danger);}
+  .msg.err{color:var(--critical-text);}
   table{width:100%;border-collapse:collapse;font-size:0.85rem;}
   th,td{border-bottom:1px solid var(--border);padding:8px 6px;text-align:left;white-space:nowrap;}
   th{background:#f8fafc;position:sticky;top:0;cursor:pointer;}
   tr:hover{background:#f8fafc;cursor:pointer;}
-  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:bold;}
-  .badge.ok{background:#ecfdf5;color:var(--ok);}
-  .badge.ng{background:#fef2f2;color:var(--danger);}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:bold;}
+  .badge.ok{background:var(--good-bg);color:var(--good-text);}
+  .badge.ng{background:var(--critical-bg);color:var(--critical-text);}
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
   .toolbar button{background:#fff;border:1px solid var(--border);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.85rem;}
   .table-wrap{overflow-x:auto;}
   .detail{position:fixed;inset:0;background:rgba(15,23,42,0.5);display:none;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;z-index:10;}
   .detail.show{display:flex;}
-  .detail-inner{background:#fff;border-radius:10px;max-width:680px;width:100%;padding:24px;margin-top:20px;}
-  .detail-inner h2{margin-top:0;font-size:1.1rem;}
-  .detail-inner .row{margin-bottom:10px;font-size:0.9rem;}
-  .detail-inner .row b{display:block;color:var(--muted);font-size:0.75rem;margin-bottom:2px;}
-  .detail-inner .qa{white-space:pre-wrap;background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:0.85rem;}
-  .closeBtn{float:right;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);}
+  .detail-inner{background:#fff;border-radius:12px;max-width:720px;width:100%;padding:0 0 24px;margin-top:20px;overflow:hidden;}
+  .closeBtn{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.18);border:none;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;color:#fff;line-height:1;}
+  .closeBtn:hover{background:rgba(255,255,255,0.3);}
+
+  /* ---- detail header ---- */
+  .d-head{position:relative;background:var(--blue);color:#fff;padding:20px 24px 18px;}
+  .d-head h2{margin:0 0 4px;font-size:1.15rem;}
+  .d-head .sub{font-size:0.8rem;opacity:0.85;}
+
+  /* ---- section wrapper ---- */
+  .d-section{padding:18px 24px 0;}
+  .d-section h3{margin:0 0 12px;font-size:0.85rem;color:var(--ink-secondary);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;}
+
+  /* ---- hero stat row ---- */
+  .stat-row{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;}
+  .stat-tile{border:1px solid var(--border);border-radius:10px;padding:14px 14px;background:#fafbfc;}
+  .stat-tile .label{font-size:0.72rem;color:var(--ink-muted);font-weight:700;margin-bottom:6px;}
+  .stat-tile .value{font-size:1.9rem;font-weight:800;line-height:1;color:var(--ink-primary);}
+  .stat-tile .value small{font-size:0.95rem;font-weight:700;color:var(--ink-secondary);margin-left:2px;}
+  .stat-tile.judge-ok{background:var(--good-bg);border-color:transparent;}
+  .stat-tile.judge-ng{background:var(--critical-bg);border-color:transparent;}
+  .stat-tile.judge-ok .value{color:var(--good-text);}
+  .stat-tile.judge-ng .value{color:var(--critical-text);}
+  .stat-tile .judge-text{font-size:0.85rem;font-weight:700;margin-top:2px;}
+  .stat-tile.warn-min .value{color:var(--critical-text);}
+  .stat-tile.warn-min .label::after{content:" ⚠";}
+
+  /* ---- DISC type badge ---- */
+  .disc-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;font-size:1rem;font-weight:800;color:#fff;margin-bottom:14px;}
+
+  /* ---- bar rows (shared by DISC + criteria) ---- */
+  .bar-row{display:grid;grid-template-columns:172px 1fr 40px;align-items:center;gap:10px;margin-bottom:9px;font-size:0.8rem;}
+  .bar-row .bar-label{color:var(--ink-secondary);font-weight:600;white-space:normal;line-height:1.25;}
+  .bar-track{background:#eef1f5;border-radius:5px;height:14px;overflow:hidden;position:relative;}
+  .bar-fill{height:100%;border-radius:5px 0 0 5px;box-shadow:inset -1px 0 0 rgba(11,11,11,0.12);}
+  .bar-row .bar-value{text-align:right;font-weight:700;color:var(--ink-primary);font-variant-numeric:tabular-nums;}
+  .bar-row .bar-weight{color:var(--ink-muted);font-weight:400;font-size:0.72rem;}
+
+  .disc-profile{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:0.85rem;color:var(--ink-secondary);margin-top:10px;}
+
+  /* ---- Q&A cards ---- */
+  .qa-card{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+  .qa-card .q-label{background:#f1f5f9;padding:6px 12px;font-size:0.78rem;font-weight:700;color:var(--blue-dark);}
+  .qa-card .qa{white-space:pre-wrap;padding:10px 12px;font-size:0.85rem;color:var(--text);}
+
   #loading{display:none;color:var(--muted);font-size:0.9rem;}
+  @media (max-width:480px){
+    .stat-row{grid-template-columns:1fr 1fr;}
+    .bar-row{grid-template-columns:104px 1fr 36px;font-size:0.72rem;}
+  }
 </style>
 </head>
 <body>
@@ -97,6 +153,14 @@ let currentPw = '';
 
 const SQ_LABELS = ["Q1. きっかけ","Q2. 不安な点","Q3. 年下からの指導経験","Q4. 大変だった経験","Q5. 意見の違う相手との折り合い","Q6. ルール順守への考え","Q7. 屋外・体力作業への意欲","Q8. 腰を据えて取り組む期間","Q9. 5年後10年後の展望","Q10. 転職で大切にしたいこと"];
 const CRIT_LABELS = ["①素直さ・受容力","②誠実さ・正直さ","③協調性・チームワーク","④責任感・やり抜く力","⑤向上心・成長ポテンシャル","⑥規範意識・安全遵守","⑦コミュニケーション力","⑧定着可能性・価値観の一致"];
+const CRIT_WEIGHTS = [1.5,1.5,1.0,1.0,1.5,1.0,1.0,1.5];
+const SEQ_STEPS = {1:'var(--seq-1)',2:'var(--seq-2)',3:'var(--seq-3)',4:'var(--seq-4)',5:'var(--seq-5)'};
+const DISC_META = {
+  'D（主導型）': {key:'D', color:'var(--cat-1)', total:'disc_d_total'},
+  'I（感化型）': {key:'I', color:'var(--cat-2)', total:'disc_i_total'},
+  'S（安定型）': {key:'S', color:'var(--cat-3)', total:'disc_s_total'},
+  'C（慎重型）': {key:'C', color:'var(--cat-4)', total:'disc_c_total'},
+};
 
 document.getElementById('loadBtn').addEventListener('click', loadResults);
 document.getElementById('pwInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') loadResults(); });
@@ -178,25 +242,91 @@ function render(){
 
 function showDetail(r){
   const inner = document.getElementById('detailInner');
+  const isPass = (r.judge || '').indexOf('◎') === 0;
+  const judgeClass = isPass ? 'judge-ok' : 'judge-ng';
+  const judgeIcon = isPass ? '◎' : '△';
+
+  // ---- hero stat tiles ----
+  const minWarn = r.min_score <= 2 ? ' warn-min' : '';
+  const statHtml = `
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="label">加重合計点</div>
+        <div class="value">${r.weighted_total}<small>点 / ${r.score_pct}%</small></div>
+      </div>
+      <div class="stat-tile ${judgeClass}">
+        <div class="label">合否判定</div>
+        <div class="value">${judgeIcon}</div>
+        <div class="judge-text">${escapeHtml(r.judge)}</div>
+      </div>
+      <div class="stat-tile${minWarn}">
+        <div class="label">最低得点</div>
+        <div class="value">${r.min_score}<small>点</small></div>
+      </div>
+    </div>
+  `;
+
+  // ---- DISC bar chart (categorical, fixed order D/I/S/C) ----
+  const discMax = 15;
+  const discOrder = ['D（主導型）','I（感化型）','S（安定型）','C（慎重型）'];
+  const discBars = discOrder.map(type => {
+    const meta = DISC_META[type];
+    const total = r[meta.total] || 0;
+    const pct = Math.round((total / discMax) * 100);
+    const isType = r.disc_type === type;
+    return `
+      <div class="bar-row">
+        <span class="bar-label" style="${isType ? 'font-weight:800;color:'+meta.color+';' : ''}">${type}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${meta.color};"></div></div>
+        <span class="bar-value">${total}</span>
+      </div>`;
+  }).join('');
+  const discTypeMeta = DISC_META[r.disc_type] || {color:'var(--blue)'};
+  const discHtml = `
+    <div class="d-section">
+      <h3>DISCタイプ判定</h3>
+      <span class="disc-badge" style="background:${discTypeMeta.color};">${escapeHtml(r.disc_type)}</span>
+      ${discBars}
+      <div class="disc-profile">${escapeHtml(r.disc_profile)}</div>
+    </div>
+  `;
+
+  // ---- criteria bar chart (sequential, magnitude 1-5) ----
+  const critBars = CRIT_LABELS.map((label,i) => {
+    const v = r['crit'+(i+1)];
+    const pct = Math.round((v/5)*100);
+    return `
+      <div class="bar-row">
+        <span class="bar-label">${label}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${SEQ_STEPS[v]||'var(--seq-3)'};"></div></div>
+        <span class="bar-value">${v}<span class="bar-weight">/5</span></span>
+      </div>`;
+  }).join('');
+  const critHtml = `
+    <div class="d-section">
+      <h3>評価シート（8項目・ウエイト付き加重採点）</h3>
+      ${critBars}
+    </div>
+  `;
+
+  // ---- Q&A cards ----
   let qaHtml = '';
   for(let i=1;i<=10;i++){
     const v = r['q'+i];
-    if(v) qaHtml += `<div class="row"><b>${SQ_LABELS[i-1]}</b><div class="qa">${escapeHtml(v)}</div></div>`;
+    if(v) qaHtml += `<div class="qa-card"><div class="q-label">${SQ_LABELS[i-1]}</div><div class="qa">${escapeHtml(v)}</div></div>`;
   }
-  let critHtml = '<div class="row"><b>評価シート（8項目）</b><div class="qa">' +
-    CRIT_LABELS.map((label,i) => `${label}: ${r['crit'+(i+1)]}点`).join(' / ') + '</div></div>';
-  let discHtml = `<div class="row"><b>DISC集計</b><div class="qa">D合計 ${r.disc_d_total} / I合計 ${r.disc_i_total} / S合計 ${r.disc_s_total} / C合計 ${r.disc_c_total}</div></div>`;
+  const qaSection = qaHtml ? `<div class="d-section"><h3>標準質問10選 メモ</h3>${qaHtml}</div>` : '';
 
   inner.innerHTML = `
-    <button class="closeBtn" id="closeDetail">×</button>
-    <h2>${escapeHtml(r.candidate_name)}（${escapeHtml(r.interview_date)} / 面接官: ${escapeHtml(r.interviewer_name)}）</h2>
-    <div class="row"><b>加重合計点</b>${r.weighted_total} 点（${r.score_pct}%） ／ 最低得点 ${r.min_score} 点</div>
-    <div class="row"><b>合否判定</b>${escapeHtml(r.judge)}</div>
-    <div class="row"><b>DISCタイプ</b>${escapeHtml(r.disc_type)}</div>
-    <div class="row"><b>DISC自動解説</b><div class="qa">${escapeHtml(r.disc_profile)}</div></div>
+    <div class="d-head">
+      <button class="closeBtn" id="closeDetail">×</button>
+      <h2>${escapeHtml(r.candidate_name)}</h2>
+      <div class="sub">${escapeHtml(r.interview_date)} ／ 面接官: ${escapeHtml(r.interviewer_name)}</div>
+    </div>
+    <div class="d-section">${statHtml}</div>
     ${discHtml}
     ${critHtml}
-    ${qaHtml}
+    ${qaSection}
   `;
   document.getElementById('detailModal').classList.add('show');
   document.getElementById('closeDetail').addEventListener('click', () => {
