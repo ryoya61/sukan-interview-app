@@ -94,8 +94,11 @@
 
   /* ---- Q&A cards ---- */
   .qa-card{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
-  .qa-card .q-label{background:#f1f5f9;padding:6px 12px;font-size:0.78rem;font-weight:700;color:var(--blue-dark);}
+  .qa-card .q-label{background:#f1f5f9;padding:6px 12px;font-size:0.78rem;font-weight:700;color:var(--blue-dark);display:flex;justify-content:space-between;align-items:center;gap:8px;}
   .qa-card .qa{white-space:pre-wrap;padding:10px 12px;font-size:0.85rem;color:var(--text);}
+  .qa-card .qa.empty{color:var(--ink-muted);font-style:italic;}
+  .qa-score{flex-shrink:0;display:inline-flex;align-items:baseline;justify-content:center;min-width:34px;height:20px;padding:0 7px;border-radius:10px;color:#fff;font-size:0.72rem;font-weight:800;}
+  .qa-score small{font-weight:600;font-size:0.62rem;margin-left:1px;opacity:0.9;}
 
   #loading{display:none;color:var(--muted);font-size:0.9rem;}
   @media (max-width:480px){
@@ -313,11 +316,15 @@ function showDetail(r){
     </div>
   `;
 
-  // ---- Q&A cards ----
+  // ---- Q&A cards (memo + optional per-question score) ----
   let qaHtml = '';
   for(let i=1;i<=10;i++){
     const v = r['q'+i];
-    if(v) qaHtml += `<div class="qa-card"><div class="q-label">${SQ_LABELS[i-1]}</div><div class="qa">${escapeHtml(v)}</div></div>`;
+    const score = r['q'+i+'_score'];
+    if(!v && !score) continue;
+    const scoreBadge = score ? `<span class="qa-score" style="background:${SEQ_STEPS[score]||'var(--seq-3)'};">${score}<small>/5</small></span>` : '';
+    const noteHtml = v ? escapeHtml(v) : '(メモなし)';
+    qaHtml += `<div class="qa-card"><div class="q-label"><span>${SQ_LABELS[i-1]}</span>${scoreBadge}</div><div class="qa${v ? '' : ' empty'}">${noteHtml}</div></div>`;
   }
   const qaSection = qaHtml ? `<div class="d-section"><h3>標準質問10選 メモ</h3>${qaHtml}</div>` : '';
 
@@ -353,14 +360,14 @@ function downloadDetailPdf(r){
   const opt = {
     margin: [10, 8, 10, 8],
     filename: `スイカン面接評価_${safeName}_${safeDate}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: { type: 'png' },
     html2canvas: {
-      scale: 2,
+      scale: 3,
       useCORS: true,
       backgroundColor: '#ffffff',
       ignoreElements: (element) => element.classList && element.classList.contains('no-pdf')
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
