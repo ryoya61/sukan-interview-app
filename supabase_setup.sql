@@ -49,6 +49,10 @@ create policy "anon can insert evaluations" on evaluations
   to anon
   with check (true);
 
+-- RLSポリシーだけでなく、テーブルへの「追加」権限そのものもanonロールに付与する必要があります
+grant usage on schema public to anon;
+grant insert on evaluations to anon;
+
 -- 閲覧用パスフレーズを保管する小さなテーブル（ハッシュ化して保存）
 create table if not exists app_secrets (
   key text primary key,
@@ -83,12 +87,3 @@ $$;
 
 -- ログイン不要のユーザー（anon）がこの関数を呼べるようにする
 grant execute on function get_results(text) to anon;
-
--- =====================================================================
--- 以上で完了です。
--- あとから閲覧用パスフレーズを変更したい場合は、下のSQLだけを再実行してください。
---
--- insert into app_secrets (key, value)
--- values ('admin_passphrase_hash', crypt('新しいパスフレーズ', gen_salt('bf')))
--- on conflict (key) do update set value = excluded.value;
--- =====================================================================
