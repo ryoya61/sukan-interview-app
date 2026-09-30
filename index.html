@@ -53,6 +53,25 @@
   .msg.err{background:var(--critical-bg);color:var(--critical-text);border:1px solid #fecaca;}
   .required{display:inline-flex;align-items:center;background:var(--critical-bg);color:var(--critical-text);font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;}
 
+  /* ---- question cards (標準質問10選) ---- */
+  .q-card{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;background:#fafbfc;}
+  .q-card:last-child{margin-bottom:0;}
+  .q-card-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+  .q-num{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-size:0.72rem;font-weight:800;margin-top:1px;}
+  .q-text{font-weight:600;font-size:0.95rem;line-height:1.5;}
+  .q-eval-tag{display:inline-block;font-size:0.72rem;font-weight:700;color:var(--ink-secondary);background:#eef1f5;padding:3px 10px;border-radius:12px;margin:0 0 10px 38px;}
+  .q-callouts{display:flex;flex-direction:column;gap:8px;margin:0 0 12px 38px;}
+  .q-callout{display:flex;gap:8px;padding:9px 11px;border-radius:8px;font-size:0.8rem;line-height:1.5;}
+  .q-callout.good{background:var(--good-bg);color:var(--good-text);}
+  .q-callout.warn{background:var(--critical-bg);color:var(--critical-text);}
+  .q-callout-icon{flex-shrink:0;font-weight:800;}
+  .q-callout strong{display:block;font-size:0.72rem;margin-bottom:2px;}
+  .q-card textarea{margin-left:38px;width:calc(100% - 38px);}
+  @media (max-width:480px){
+    .q-eval-tag,.q-callouts{margin-left:0;}
+    .q-card textarea{margin-left:0;width:100%;}
+  }
+
   /* ---- DISC group badges (mirrors results.html disc-badge) ---- */
   .disc-group{margin-bottom:22px;}
   .disc-group:last-child{margin-bottom:0;}
@@ -240,11 +259,34 @@ function buildScale(container, name, lowLabel, highLabel, selColor){
   container.appendChild(wrap);
 }
 
+function parseQHelp(text){
+  const lines = text.split('\n');
+  let evalTag = '', good = '', warn = '';
+  lines.forEach(line => {
+    if(line.indexOf('評価観点') === 0) evalTag = line;
+    else if(line.indexOf('高評価') === 0) good = line.replace(/^高評価\(5点\)[^：]*：/, '');
+    else if(line.indexOf('要注意') === 0) warn = line.replace(/^要注意\(1点\)[^：]*：/, '');
+  });
+  return {evalTag, good, warn};
+}
+
 const qContainer = document.getElementById('qContainer');
 SQ.forEach((q, i) => {
+  const help = parseQHelp(q[1]);
   const div = document.createElement('div');
-  div.className = 'field';
-  div.innerHTML = `<label class="title">${q[0]}</label><div class="help">${q[1]}</div><textarea id="q${i+1}" placeholder="回答内容・気づいた点をメモ"></textarea>`;
+  div.className = 'q-card';
+  div.innerHTML = `
+    <div class="q-card-head">
+      <span class="q-num">Q${i+1}</span>
+      <span class="q-text">${q[0].replace(/^Q\d+\.\s*/, '')}</span>
+    </div>
+    <div class="q-eval-tag">${help.evalTag}</div>
+    <div class="q-callouts">
+      <div class="q-callout good"><span class="q-callout-icon">◎</span><div><strong>高評価（5点）の例</strong>${help.good}</div></div>
+      <div class="q-callout warn"><span class="q-callout-icon">△</span><div><strong>要注意（1点）サイン</strong>${help.warn}</div></div>
+    </div>
+    <textarea id="q${i+1}" placeholder="回答内容・気づいた点をメモ"></textarea>
+  `;
   qContainer.appendChild(div);
 });
 
