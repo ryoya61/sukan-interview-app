@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>結果一覧（管理者用）｜スイカン面接評価</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="config.js"></script>
 <style>
   :root{
@@ -51,6 +52,9 @@
   .detail-inner{background:#fff;border-radius:12px;max-width:720px;width:100%;padding:0 0 24px;margin-top:20px;overflow:hidden;}
   .closeBtn{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.18);border:none;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;color:#fff;line-height:1;}
   .closeBtn:hover{background:rgba(255,255,255,0.3);}
+  .pdfBtn{position:absolute;top:14px;right:54px;background:rgba(255,255,255,0.18);border:none;height:28px;padding:0 12px;border-radius:14px;font-size:0.72rem;font-weight:700;cursor:pointer;color:#fff;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+  .pdfBtn:hover{background:rgba(255,255,255,0.3);}
+  .pdfBtn:disabled{opacity:0.6;cursor:default;}
 
   /* ---- detail header ---- */
   .d-head{position:relative;background:var(--blue);color:#fff;padding:20px 24px 18px;}
@@ -319,7 +323,8 @@ function showDetail(r){
 
   inner.innerHTML = `
     <div class="d-head">
-      <button class="closeBtn" id="closeDetail">×</button>
+      <button class="pdfBtn no-pdf" id="pdfDetail">PDF ダウンロード</button>
+      <button class="closeBtn no-pdf" id="closeDetail">×</button>
       <h2>${escapeHtml(r.candidate_name)}</h2>
       <div class="sub">${escapeHtml(r.interview_date)} ／ 面接官: ${escapeHtml(r.interviewer_name)}</div>
     </div>
@@ -331,6 +336,42 @@ function showDetail(r){
   document.getElementById('detailModal').classList.add('show');
   document.getElementById('closeDetail').addEventListener('click', () => {
     document.getElementById('detailModal').classList.remove('show');
+  });
+  document.getElementById('pdfDetail').addEventListener('click', () => downloadDetailPdf(r));
+}
+
+function downloadDetailPdf(r){
+  const btn = document.getElementById('pdfDetail');
+  const el = document.getElementById('detailInner');
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '作成中...';
+
+  const safeName = String(r.candidate_name || '候補者').replace(/[\\/:*?"<>|]/g, '_');
+  const safeDate = String(r.interview_date || '').replace(/[\\/:*?"<>|]/g, '_');
+
+  const opt = {
+    margin: [10, 8, 10, 8],
+    filename: `スイカン面接評価_${safeName}_${safeDate}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      ignoreElements: (element) => element.classList && element.classList.contains('no-pdf')
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  html2pdf().set(opt).from(el).save().then(() => {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }).catch((err) => {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = origText;
+    alert('PDFの作成に失敗しました: ' + (err.message || err));
   });
 }
 
