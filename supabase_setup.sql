@@ -71,7 +71,7 @@ create or replace function get_results(pw text)
 returns setof evaluations
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   if exists (
