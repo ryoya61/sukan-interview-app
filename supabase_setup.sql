@@ -20,6 +20,9 @@ create table if not exists evaluations (
   q1 text, q2 text, q3 text, q4 text, q5 text,
   q6 text, q7 text, q8 text, q9 text, q10 text,
 
+  q1_score int, q2_score int, q3_score int, q4_score int, q5_score int,
+  q6_score int, q7_score int, q8_score int, q9_score int, q10_score int,
+
   crit1 int, crit2 int, crit3 int, crit4 int,
   crit5 int, crit6 int, crit7 int, crit8 int,
 
@@ -87,3 +90,28 @@ $$;
 
 -- ログイン不要のユーザー（anon）がこの関数を呼べるようにする
 grant execute on function get_results(text) to anon;
+
+-- =====================================================================
+-- 以上で完了です。
+-- あとから閲覧用パスフレーズを変更したい場合は、下のSQLだけを再実行してください。
+--
+-- insert into app_secrets (key, value)
+-- values ('admin_passphrase_hash', crypt('新しいパスフレーズ', gen_salt('bf')))
+-- on conflict (key) do update set value = excluded.value;
+-- =====================================================================
+
+-- =====================================================================
+-- 追加マイグレーション: 標準質問10選に「点数（任意）」列を追加
+-- すでに運用中のテーブルに対しては、上のCREATE TABLEは実行されないため
+-- 下のALTER TABLEを実行して列を追加してください（既存データは失われません）。
+-- =====================================================================
+alter table evaluations add column if not exists q1_score int;
+alter table evaluations add column if not exists q2_score int;
+alter table evaluations add column if not exists q3_score int;
+alter table evaluations add column if not exists q4_score int;
+alter table evaluations add column if not exists q5_score int;
+alter table evaluations add column if not exists q6_score int;
+alter table evaluations add column if not exists q7_score int;
+alter table evaluations add column if not exists q8_score int;
+alter table evaluations add column if not exists q9_score int;
+alter table evaluations add column if not exists q10_score int;
