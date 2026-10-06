@@ -237,10 +237,10 @@ const DISC_GROUPS = [
 
 const SEQ_STEPS = {1:'var(--seq-1)',2:'var(--seq-2)',3:'var(--seq-3)',4:'var(--seq-4)',5:'var(--seq-5)'};
 const DISC_META = {
-  'D（主導型）': {color:'var(--cat-1)', total:'disc_d_total'},
-  'I（感化型）': {color:'var(--cat-2)', total:'disc_i_total'},
-  'S（安定型）': {color:'var(--cat-3)', total:'disc_s_total'},
-  'C（慎重型）': {color:'var(--cat-4)', total:'disc_c_total'},
+  'D（主導型）': {key:'D', color:'var(--cat-1)', total:'disc_d_total'},
+  'I（感化型）': {key:'I', color:'var(--cat-2)', total:'disc_i_total'},
+  'S（安定型）': {key:'S', color:'var(--cat-3)', total:'disc_s_total'},
+  'C（慎重型）': {key:'C', color:'var(--cat-4)', total:'disc_c_total'},
 };
 
 const DISC_PROFILES = {
@@ -249,6 +249,61 @@ const DISC_PROFILES = {
   "S（安定型）": "この人は、落ち着いて着実に物事を進めることを好むタイプです。急な変化よりも、決まった手順の中でコツコツ取り組むことに安心感を持ちやすい傾向があります。丁寧なOJTと安定した環境のもとで力を発揮しやすく、長期的な信頼関係を築きながら育成すると定着につながりやすいタイプです。変化や新しい役割を求めるときは、事前に十分な説明と準備期間を設けると良い関わり方になります。",
   "C（慎重型）": "この人は、正確さや根拠を大切にし、慎重に考えてから行動するタイプです。質問に対して具体的な数字や理由を添えて答える傾向があり、曖昧な指示より基準や手順が明確な方が力を発揮しやすい傾向があります。水質検査など正確性が求められる作業や安全確認の場面と相性が良い可能性がある一方、即断即決を求めすぎると本来の力が出にくいため、考える時間を確保する関わり方が適しています。"
 };
+
+// ---- より細分化したDISCタイプ判定（D/I/S/Cの素点から主・副タイプと強度を判定し、種類数を増やす） ----
+const TYPE_META = {
+  D: {label:'D（主導型）', short:'主導', color:'var(--cat-1)'},
+  I: {label:'I（感化型）', short:'感化', color:'var(--cat-2)'},
+  S: {label:'S（安定型）', short:'安定', color:'var(--cat-3)'},
+  C: {label:'C（慎重型）', short:'慎重', color:'var(--cat-4)'},
+};
+const DISC_SECONDARY_BLURB = {
+  D: 'また、物事を素早く決めて行動しようとするD（主導型）の傾向も併せ持っています。',
+  I: 'また、人との関わりを楽しみ、場を明るくしようとするI（感化型）の傾向も併せ持っています。',
+  S: 'また、落ち着いて着実に取り組もうとするS（安定型）の傾向も併せ持っています。',
+  C: 'また、正確さや根拠を重視し、慎重に行動しようとするC（慎重型）の傾向も併せ持っています。',
+};
+function classifyDisc(dSum, iSum, sSum, cSum){
+  const sums = [
+    {key:'D', sum:dSum||0},
+    {key:'I', sum:iSum||0},
+    {key:'S', sum:sSum||0},
+    {key:'C', sum:cSum||0},
+  ];
+  const sorted = [...sums].sort((a,b) => b.sum - a.sum);
+  const primary = sorted[0], secondary = sorted[1];
+  const gap = primary.sum - secondary.sum;
+  const isBlend = gap <= 3 && secondary.sum >= 6;
+
+  let intensity;
+  if(primary.sum >= 13) intensity = '非常に強い';
+  else if(primary.sum >= 10) intensity = '強い';
+  else if(primary.sum >= 7) intensity = '標準的な';
+  else intensity = '穏やかな';
+
+  const pMeta = TYPE_META[primary.key];
+  const sMeta = TYPE_META[secondary.key];
+
+  let label, profile;
+  if(isBlend){
+    label = `${primary.key}${secondary.key}型（${pMeta.short}×${sMeta.short}）`;
+    profile = DISC_PROFILES[pMeta.label] + ' ' + DISC_SECONDARY_BLURB[secondary.key];
+  }else{
+    label = `${pMeta.label}（${intensity}傾向）`;
+    let framing;
+    if(intensity === '非常に強い') framing = `${pMeta.label}の特性が非常に強く表れています。`;
+    else if(intensity === '強い') framing = `${pMeta.label}の特性が強く表れています。`;
+    else if(intensity === '標準的な') framing = `${pMeta.label}の特性が最も強く出ていますが、突出した偏りではなく標準的な範囲です。`;
+    else framing = `${pMeta.label}の傾向が相対的に高いものの、全体として控えめ・穏やかな反応が多く見られました。`;
+    profile = framing + ' ' + DISC_PROFILES[pMeta.label];
+  }
+
+  return {
+    label, profile, isBlend,
+    primaryKey: primary.key, secondaryKey: secondary.key,
+    primaryColor: pMeta.color, secondaryColor: sMeta.color,
+  };
+}
 
 const SQ_SHORT = ["きっかけ","不安な点","年下からの指導経験","大変だった経験","意見の違う相手との折り合い","ルール順守への考え","屋外・体力作業への意欲","腰を据えて取り組む期間","5年後10年後の展望","転職で大切にしたいこと"];
 
@@ -420,27 +475,32 @@ function renderResult(row){
     </div>
   `;
 
+  const discResult = classifyDisc(row.disc_d_total, row.disc_i_total, row.disc_s_total, row.disc_c_total);
   const discMax = 15;
   const discOrder = ['D（主導型）','I（感化型）','S（安定型）','C（慎重型）'];
   const discBars = discOrder.map(type => {
     const meta = DISC_META[type];
     const total = row[meta.total] || 0;
     const pct = Math.round((total / discMax) * 100);
-    const isType = row.disc_type === type;
+    const isPrimary = meta.key === discResult.primaryKey;
+    const isSecondary = discResult.isBlend && meta.key === discResult.secondaryKey;
+    const labelStyle = isPrimary ? `font-weight:800;color:${meta.color};` : isSecondary ? `font-weight:700;color:${meta.color};opacity:0.85;` : '';
     return `
       <div class="bar-row">
-        <span class="bar-label" style="${isType ? 'font-weight:800;color:'+meta.color+';' : ''}">${type}</span>
+        <span class="bar-label" style="${labelStyle}">${type}</span>
         <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${meta.color};"></div></div>
         <span class="bar-value">${total}</span>
       </div>`;
   }).join('');
-  const discTypeMeta = DISC_META[row.disc_type] || {color:'var(--blue)'};
+  const discBadgeBg = discResult.isBlend
+    ? `linear-gradient(90deg, ${discResult.primaryColor}, ${discResult.secondaryColor})`
+    : discResult.primaryColor;
 
   document.getElementById('r_disc_section').innerHTML = `
     <h4>DISCタイプ判定</h4>
-    <span class="disc-badge" style="background:${discTypeMeta.color};">${escapeHtml(row.disc_type)}</span>
+    <span class="disc-badge" style="background:${discBadgeBg};">${escapeHtml(discResult.label)}</span>
     ${discBars}
-    <div class="disc-profile">${escapeHtml(row.disc_profile)}</div>
+    <div class="disc-profile">${escapeHtml(discResult.profile)}</div>
   `;
 
   // ---- 長所・短所（評価シート・標準質問のみから自動生成、DISCとは完全に切り離して算出） ----
