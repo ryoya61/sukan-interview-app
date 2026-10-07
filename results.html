@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>結果一覧（管理者用）｜スイカン面接評価</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="config.js"></script>
 <style>
   :root{
@@ -631,11 +632,13 @@ function downloadDetailPdf(r){
   const safeName = String(r.candidate_name || '候補者').replace(/[\\/:*?"<>|]/g, '_');
   const safeDate = String(r.interview_date || '').replace(/[\\/:*?"<>|]/g, '_');
 
-  // ---- A4 1枚に収まるよう専用のコンパクトレイアウトで生成し、収まりきらない場合は自動縮小する ----
+  // ---- 専用のコンパクトレイアウトをcanvas化し、画像としてA4 1枚のPDFページに収まるよう縮小配置する ----
+  // (html2canvasは画面外(position:fixed; left:-10000px)の要素を素のwindow幅でクローンすると高さを0と
+  //  誤測定することがあるため、windowWidthをステージ幅に明示的に合わせて正しく計測させている)
   const MM_TO_PX = 3.7795275591;
   const MARGIN_MM = 8;
-  const contentWpx = Math.round((210 - MARGIN_MM * 2) * MM_TO_PX);
-  const contentHpx = Math.round((297 - MARGIN_MM * 2) * MM_TO_PX);
+  const PAGE_W_MM = 210, PAGE_H_MM = 297;
+  const contentWpx = Math.round((PAGE_W_MM - MARGIN_MM * 2) * MM_TO_PX);
 
   const stage = document.createElement('div');
   stage.className = 'pdfdoc';
@@ -643,56 +646,34 @@ function downloadDetailPdf(r){
   stage.style.left = '-10000px';
   stage.style.top = '0';
   stage.style.width = contentWpx + 'px';
+  stage.style.background = '#ffffff';
   stage.innerHTML = buildPdfHtml(r);
   document.body.appendChild(stage);
 
-  let naturalHeight = stage.scrollHeight;
-  let scale = 1;
+  html2canvas(stage, { scale: 3, useCORS: true, backgroundColor: '#ffffff', windowWidth: contentWpx }).then((canvas) => {
+    document.body.removeChild(stage);
 
-  if(naturalHeight > contentHpx){
-    scale = contentHpx / naturalHeight;
-    const widerWidth = Math.ceil(contentWpx / scale);
-    stage.style.width = widerWidth + 'px';
-    naturalHeight = stage.scrollHeight;
-  }
+    const imgWmm = PAGE_W_MM - MARGIN_MM * 2;
+    const maxHmm = PAGE_H_MM - MARGIN_MM * 2;
+    let drawWmm = imgWmm;
+    let drawHmm = imgWmm * (canvas.height / canvas.width);
+    if(drawHmm > maxHmm){
+      drawHmm = maxHmm;
+      drawWmm = drawHmm * (canvas.width / canvas.height);
+    }
+    const x = MARGIN_MM + (imgWmm - drawWmm) / 2;
+    const y = MARGIN_MM;
 
-  document.body.removeChild(stage);
-  stage.style.position = 'static';
-  stage.style.left = '';
-  stage.style.top = '';
-  stage.style.transformOrigin = 'top left';
-  if(scale < 1) stage.style.transform = `scale(${scale})`;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+    doc.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, drawWmm, drawHmm);
+    doc.save(`スイカン面接評価_${safeName}_${safeDate}.pdf`);
 
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'fixed';
-  wrapper.style.left = '-10000px';
-  wrapper.style.top = '0';
-  wrapper.style.width = contentWpx + 'px';
-  wrapper.style.height = Math.min(Math.round(naturalHeight * scale), contentHpx) + 'px';
-  wrapper.style.overflow = 'hidden';
-  wrapper.appendChild(stage);
-  document.body.appendChild(wrapper);
-
-  const opt = {
-    margin: [MARGIN_MM, MARGIN_MM, MARGIN_MM, MARGIN_MM],
-    filename: `スイカン面接評価_${safeName}_${safeDate}.pdf`,
-    image: { type: 'png' },
-    html2canvas: {
-      scale: 3,
-      useCORS: true,
-      backgroundColor: '#ffffff'
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-    pagebreak: { mode: ['avoid-all'] }
-  };
-
-  html2pdf().set(opt).from(wrapper).save().then(() => {
-    document.body.removeChild(wrapper);
     btn.disabled = false;
     btn.textContent = origText;
   }).catch((err) => {
     console.error(err);
-    if(wrapper.parentNode) document.body.removeChild(wrapper);
+    if(stage.parentNode) document.body.removeChild(stage);
     btn.disabled = false;
     btn.textContent = origText;
     alert('PDFの作成に失敗しました: ' + (err.message || err));
