@@ -148,6 +148,7 @@
   .pdfdoc .cols2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px;align-items:start;}
   .pdfdoc .box{border:1px solid rgba(15,23,42,0.07);border-radius:8px;padding:7px 8px;}
   .pdfdoc .box h3{margin:0 0 4px;font-size:6.8pt;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink-secondary);font-weight:700;}
+  .pdfdoc .box.remarks{min-height:60px;margin-top:6px;}
   .pdfdoc .bar-row{display:grid;grid-template-columns:92px 1fr 16px;align-items:center;gap:4px;margin-bottom:3px;font-size:6.2pt;}
   .pdfdoc .bar-track{background:#eef1f5;border-radius:5px;height:6px;overflow:hidden;}
   .pdfdoc .bar-fill{height:100%;}
@@ -534,6 +535,18 @@ function showDetail(r){
   }
   const qaSection = qaHtml ? `<div class="d-section"><h3>標準質問10選 メモ</h3>${qaHtml}</div>` : '';
 
+  // ---- 総合所見（管理者コメント。PDFにも反映され、PDF下部の空白を埋める用途を兼ねる） ----
+  const hasRemarks = r.admin_comment && String(r.admin_comment).trim();
+  const remarksBody = hasRemarks
+    ? escapeHtml(r.admin_comment)
+    : '<span style="color:var(--ink-muted);font-style:italic;">（記載なし。「編集」から入力できます）</span>';
+  const remarksScreenHtml = `
+    <div class="d-section">
+      <h3>総合所見</h3>
+      <div class="disc-profile" style="white-space:pre-wrap;">${remarksBody}</div>
+    </div>
+  `;
+
   inner.innerHTML = `
     <div class="d-head">
       <div class="d-head-actions">
@@ -550,6 +563,7 @@ function showDetail(r){
     ${swHtml}
     ${qaSection}
     ${discHtml}
+    ${remarksScreenHtml}
   `;
   document.getElementById('detailModal').classList.add('show');
   document.getElementById('closeDetail').addEventListener('click', () => {
@@ -642,6 +656,10 @@ function buildEditForm(r){
       </div>
       <h3>標準質問10選</h3>
       ${qHtml}
+      <h3>総合所見（管理者コメント・PDF下部に反映されます）</h3>
+      <div class="field">
+        <textarea id="edit_admin_comment" style="min-height:100px;" placeholder="総合的な所見やコメントを記入してください（任意）">${escapeHtml(r.admin_comment || '')}</textarea>
+      </div>
       <div class="edit-err" id="editErr"></div>
       <div class="edit-actions">
         <button type="button" class="edit-cancel" id="editCancelBtn">キャンセル</button>
@@ -721,6 +739,7 @@ async function saveEdit(r){
     qTexts['q'+i] = document.getElementById('edit_q'+i).value;
     qScores['q'+i+'_score'] = getEditScale('edit_q'+i+'_score');
   }
+  const adminComment = document.getElementById('edit_admin_comment').value;
 
   saveBtn.disabled = true;
   saveBtn.textContent = '保存中...';
@@ -738,7 +757,8 @@ async function saveEdit(r){
       p_q10_score: qScores.q10_score,
       p_crit1: critVals[0], p_crit2: critVals[1], p_crit3: critVals[2], p_crit4: critVals[3],
       p_crit5: critVals[4], p_crit6: critVals[5], p_crit7: critVals[6], p_crit8: critVals[7],
-      p_disc_d_total: discD, p_disc_i_total: discI, p_disc_s_total: discS, p_disc_c_total: discC
+      p_disc_d_total: discD, p_disc_i_total: discI, p_disc_s_total: discS, p_disc_c_total: discC,
+      p_admin_comment: adminComment
     });
     if(error) throw error;
     if(data !== true){
@@ -767,6 +787,7 @@ async function saveEdit(r){
       crit1: critVals[0], crit2: critVals[1], crit3: critVals[2], crit4: critVals[3],
       crit5: critVals[4], crit6: critVals[5], crit7: critVals[6], crit8: critVals[7],
       disc_d_total: discD, disc_i_total: discI, disc_s_total: discS, disc_c_total: discC,
+      admin_comment: adminComment,
       weighted_total: total, score_pct: pct, min_score: minScore, judge: judge
     });
 
@@ -878,6 +899,17 @@ function buildPdfHtml(r){
   }
   const qaSection = qaHtml ? `<div class="box" style="margin-bottom:6px;"><h3>標準質問10選 メモ</h3><div class="qa-grid">${qaHtml}</div></div>` : '';
 
+  // ---- 総合所見（管理者コメント）。あれば表示し、PDF下部の余白を自然に埋める ----
+  const remarksText = (r.admin_comment && String(r.admin_comment).trim())
+    ? escapeHtml(truncateText(r.admin_comment, 420))
+    : '<span style="color:var(--ink-muted);font-style:italic;">（記載なし）</span>';
+  const remarksHtml = `
+    <div class="box remarks">
+      <h3>総合所見</h3>
+      <div class="profile" style="margin-top:0;white-space:pre-wrap;">${remarksText}</div>
+    </div>
+  `;
+
   return `
     <div class="ph">
       <h2>${escapeHtml(r.candidate_name)}</h2>
@@ -901,6 +933,7 @@ function buildPdfHtml(r){
       <div class="swbox s2"><span class="lbl">短所</span>${escapeHtml(truncateText(sw.weaknesses, 180))}</div>
     </div>
     ${qaSection}
+    ${remarksHtml}
   `;
 }
 
