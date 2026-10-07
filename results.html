@@ -53,16 +53,47 @@
   .detail{position:fixed;inset:0;background:rgba(15,23,42,0.5);display:none;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;z-index:10;}
   .detail.show{display:flex;}
   .detail-inner{background:#fff;border-radius:20px;max-width:720px;width:100%;padding:0 0 24px;margin-top:20px;overflow:hidden;}
-  .closeBtn{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.18);border:none;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;color:#fff;line-height:1;}
+  .closeBtn{background:rgba(255,255,255,0.18);border:none;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;color:#fff;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
   .closeBtn:hover{background:rgba(255,255,255,0.3);}
-  .pdfBtn{position:absolute;top:14px;right:54px;background:rgba(255,255,255,0.18);border:none;height:28px;padding:0 12px;border-radius:14px;font-size:0.72rem;font-weight:700;cursor:pointer;color:#fff;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
-  .pdfBtn:hover{background:rgba(255,255,255,0.3);}
-  .pdfBtn:disabled{opacity:0.6;cursor:default;}
 
   /* ---- detail header ---- */
-  .d-head{position:relative;background:var(--blue);color:#fff;padding:20px 24px 18px;}
+  .d-head{position:relative;background:var(--blue);color:#fff;padding:16px 24px 18px;}
   .d-head h2{margin:0 0 4px;font-size:1.15rem;}
   .d-head .sub{font-size:0.8rem;opacity:0.85;}
+  .d-head-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-bottom:10px;}
+  .hbtn{background:rgba(255,255,255,0.18);border:none;height:28px;padding:0 12px;border-radius:14px;font-size:0.72rem;font-weight:700;cursor:pointer;color:#fff;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+  .hbtn:hover{background:rgba(255,255,255,0.3);}
+  .hbtn:disabled{opacity:0.6;cursor:default;}
+  .hbtn.danger:hover{background:rgba(208,59,59,0.55);}
+
+  /* ---- edit form ---- */
+  .editform{padding-bottom:4px;}
+  .editform .field{margin-bottom:14px;}
+  .editform .field label.title{display:block;font-weight:600;margin-bottom:6px;font-size:0.9rem;}
+  .editform input[type=text],.editform input[type=date],.editform input[type=number],.editform textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;font-family:inherit;}
+  .editform input:focus,.editform textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(18,140,131,0.15);}
+  .editform textarea{min-height:56px;resize:vertical;}
+  .editform .scale{display:flex;gap:6px;flex-wrap:wrap;}
+  .editform .scale label{flex:1;min-width:40px;text-align:center;border:1px solid var(--border);border-radius:10px;padding:8px 4px;cursor:pointer;font-size:0.82rem;user-select:none;transition:background 0.1s,border-color 0.1s,color 0.1s;}
+  .editform .scale input{display:none;}
+  .editform .scale label.sel{background:var(--blue);color:#fff;border-color:var(--blue-dark);}
+  .editform .q-edit-card{border:1px solid rgba(15,23,42,0.05);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:#fafcfc;}
+  .editform .q-edit-card .q-edit-label{font-size:0.82rem;font-weight:700;color:var(--blue-dark);margin-bottom:6px;}
+  .editform .q-edit-card .q-score-row{margin-top:8px;}
+  .editform .q-edit-card .q-score-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .editform .q-edit-card .q-score-head span{font-size:0.75rem;font-weight:700;color:var(--ink-secondary);}
+  .editform .q-edit-card .q-score-head a{font-size:0.72rem;color:var(--muted);text-decoration:none;}
+  .editform .q-edit-card .q-score-head a:hover{text-decoration:underline;}
+  .editform .disc-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .editform h3{margin:18px 0 10px;font-size:0.85rem;color:var(--ink-secondary);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;}
+  .edit-actions{display:flex;gap:10px;margin-top:4px;}
+  .edit-actions button{flex:1;border:none;padding:12px;border-radius:999px;font-weight:700;font-size:0.9rem;cursor:pointer;}
+  .edit-save{background:var(--blue);color:#fff;box-shadow:0 8px 16px -6px rgba(18,140,131,0.5);}
+  .edit-save:hover{background:var(--blue-dark);}
+  .edit-save:disabled{opacity:0.6;cursor:default;}
+  .edit-cancel{background:#fff;border:1px solid var(--border) !important;color:var(--text);}
+  .edit-cancel:hover{background:#f3f8f7;}
+  .edit-err{margin-top:10px;padding:10px 12px;border-radius:12px;font-size:0.85rem;background:var(--critical-bg);color:var(--critical-text);display:none;}
 
   /* ---- section wrapper ---- */
   .d-section{padding:18px 24px 0;}
@@ -505,8 +536,12 @@ function showDetail(r){
 
   inner.innerHTML = `
     <div class="d-head">
-      <button class="pdfBtn no-pdf" id="pdfDetail">PDF ダウンロード</button>
-      <button class="closeBtn no-pdf" id="closeDetail">×</button>
+      <div class="d-head-actions">
+        <button class="hbtn" id="pdfDetail">PDF ダウンロード</button>
+        <button class="hbtn" id="editDetail">編集</button>
+        <button class="hbtn danger" id="deleteDetail">削除</button>
+        <button class="closeBtn" id="closeDetail">×</button>
+      </div>
       <h2>${escapeHtml(r.candidate_name)}</h2>
       <div class="sub">${escapeHtml(r.interview_date)} ／ 面接官: ${escapeHtml(r.interviewer_name)}</div>
     </div>
@@ -521,6 +556,252 @@ function showDetail(r){
     document.getElementById('detailModal').classList.remove('show');
   });
   document.getElementById('pdfDetail').addEventListener('click', () => downloadDetailPdf(r));
+  document.getElementById('editDetail').addEventListener('click', () => showEditForm(r));
+  document.getElementById('deleteDetail').addEventListener('click', () => deleteRow(r));
+}
+
+// ---- 編集フォーム（評価シート・標準質問・DISC合計点・候補者情報を編集できるようにする） ----
+function buildEditScale(container, name, initialVal, selColor){
+  const wrap = document.createElement('div');
+  wrap.className = 'scale';
+  for(let v=1; v<=5; v++){
+    const id = name + '_' + v;
+    const label = document.createElement('label');
+    label.setAttribute('for', id);
+    label.textContent = String(v);
+    const input = document.createElement('input');
+    input.type = 'radio'; input.name = name; input.value = v; input.id = id;
+    if(Number(initialVal) === v){
+      input.checked = true;
+      label.classList.add('sel');
+      if(selColor){ label.style.background = selColor; label.style.borderColor = selColor; }
+    }
+    input.addEventListener('change', () => {
+      wrap.querySelectorAll('label').forEach(l => { l.classList.remove('sel'); l.style.background=''; l.style.borderColor=''; });
+      label.classList.add('sel');
+      if(selColor){ label.style.background = selColor; label.style.borderColor = selColor; }
+    });
+    label.prepend(input);
+    wrap.appendChild(label);
+  }
+  container.appendChild(wrap);
+}
+
+function getEditScale(name){
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? Number(el.value) : null;
+}
+
+function buildEditForm(r){
+  let qHtml = '';
+  for(let i=1;i<=10;i++){
+    const v = r['q'+i] || '';
+    qHtml += `
+      <div class="q-edit-card">
+        <div class="q-edit-label">${SQ_LABELS[i-1]}</div>
+        <textarea id="edit_q${i}">${escapeHtml(v)}</textarea>
+        <div class="q-score-row">
+          <div class="q-score-head">
+            <span>評価（任意・1〜5点）</span>
+            <a href="#" class="qclear" data-wrap="edit_q${i}_score_wrap">クリア</a>
+          </div>
+          <div id="edit_q${i}_score_wrap"></div>
+        </div>
+      </div>`;
+  }
+  let critHtml = '';
+  for(let i=1;i<=8;i++){
+    critHtml += `
+      <div class="field">
+        <label class="title">${CRIT_LABELS[i-1]}</label>
+        <div id="edit_crit${i}_wrap"></div>
+      </div>`;
+  }
+  return `
+    <div class="editform">
+      <div class="field">
+        <label class="title">候補者氏名</label>
+        <input type="text" id="edit_candidate_name" value="${escapeHtml(r.candidate_name)}">
+      </div>
+      <div class="field">
+        <label class="title">面接日</label>
+        <input type="date" id="edit_interview_date" value="${escapeHtml(r.interview_date)}">
+      </div>
+      <div class="field">
+        <label class="title">面接官名</label>
+        <input type="text" id="edit_interviewer_name" value="${escapeHtml(r.interviewer_name)}">
+      </div>
+      <h3>評価シート（8項目）</h3>
+      ${critHtml}
+      <h3>DISCタイプ判定（各タイプの合計点 0〜15）</h3>
+      <div class="disc-edit-grid">
+        <div class="field"><label class="title">D（主導型）合計</label><input type="number" id="edit_disc_d_total" min="0" max="15" value="${r.disc_d_total ?? 0}"></div>
+        <div class="field"><label class="title">I（感化型）合計</label><input type="number" id="edit_disc_i_total" min="0" max="15" value="${r.disc_i_total ?? 0}"></div>
+        <div class="field"><label class="title">S（安定型）合計</label><input type="number" id="edit_disc_s_total" min="0" max="15" value="${r.disc_s_total ?? 0}"></div>
+        <div class="field"><label class="title">C（慎重型）合計</label><input type="number" id="edit_disc_c_total" min="0" max="15" value="${r.disc_c_total ?? 0}"></div>
+      </div>
+      <h3>標準質問10選</h3>
+      ${qHtml}
+      <div class="edit-err" id="editErr"></div>
+      <div class="edit-actions">
+        <button type="button" class="edit-cancel" id="editCancelBtn">キャンセル</button>
+        <button type="button" class="edit-save" id="editSaveBtn">保存する</button>
+      </div>
+    </div>
+  `;
+}
+
+function populateEditScales(r){
+  for(let i=1;i<=8;i++){
+    buildEditScale(document.getElementById('edit_crit'+i+'_wrap'), 'edit_crit'+i, r['crit'+i], 'var(--blue)');
+  }
+  for(let i=1;i<=10;i++){
+    buildEditScale(document.getElementById('edit_q'+i+'_score_wrap'), 'edit_q'+i+'_score', r['q'+i+'_score'], null);
+  }
+  document.querySelectorAll('.qclear').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const wrap = document.getElementById(a.dataset.wrap);
+      wrap.querySelectorAll('input').forEach(inp => inp.checked = false);
+      wrap.querySelectorAll('label').forEach(l => { l.classList.remove('sel'); l.style.background=''; l.style.borderColor=''; });
+    });
+  });
+}
+
+function showEditForm(r){
+  const inner = document.getElementById('detailInner');
+  inner.innerHTML = `
+    <div class="d-head">
+      <div class="d-head-actions">
+        <button class="closeBtn" id="editCloseX">×</button>
+      </div>
+      <h2>編集：${escapeHtml(r.candidate_name)}</h2>
+      <div class="sub">${escapeHtml(r.interview_date)} ／ 面接官: ${escapeHtml(r.interviewer_name)}</div>
+    </div>
+    <div class="d-section">${buildEditForm(r)}</div>
+  `;
+  populateEditScales(r);
+  document.getElementById('editCloseX').addEventListener('click', () => showDetail(r));
+  document.getElementById('editCancelBtn').addEventListener('click', () => showDetail(r));
+  document.getElementById('editSaveBtn').addEventListener('click', () => saveEdit(r));
+}
+
+async function saveEdit(r){
+  const saveBtn = document.getElementById('editSaveBtn');
+  const errBox = document.getElementById('editErr');
+  errBox.style.display = 'none';
+
+  const critVals = [];
+  for(let i=1;i<=8;i++){
+    const v = getEditScale('edit_crit'+i);
+    if(v === null){
+      errBox.textContent = '評価シートの8項目すべてに点数を選択してください。';
+      errBox.style.display = 'block';
+      return;
+    }
+    critVals.push(v);
+  }
+
+  const candidateName = document.getElementById('edit_candidate_name').value.trim();
+  const interviewDate = document.getElementById('edit_interview_date').value;
+  const interviewerName = document.getElementById('edit_interviewer_name').value.trim();
+  if(!candidateName || !interviewDate || !interviewerName){
+    errBox.textContent = '候補者氏名・面接日・面接官名は必須です。';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  const discD = Number(document.getElementById('edit_disc_d_total').value) || 0;
+  const discI = Number(document.getElementById('edit_disc_i_total').value) || 0;
+  const discS = Number(document.getElementById('edit_disc_s_total').value) || 0;
+  const discC = Number(document.getElementById('edit_disc_c_total').value) || 0;
+
+  const qTexts = {}, qScores = {};
+  for(let i=1;i<=10;i++){
+    qTexts['q'+i] = document.getElementById('edit_q'+i).value;
+    qScores['q'+i+'_score'] = getEditScale('edit_q'+i+'_score');
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = '保存中...';
+
+  try{
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await client.rpc('update_result', {
+      pw: currentPw, p_id: r.id,
+      p_candidate_name: candidateName, p_interview_date: interviewDate, p_interviewer_name: interviewerName,
+      p_q1: qTexts.q1, p_q2: qTexts.q2, p_q3: qTexts.q3, p_q4: qTexts.q4, p_q5: qTexts.q5,
+      p_q6: qTexts.q6, p_q7: qTexts.q7, p_q8: qTexts.q8, p_q9: qTexts.q9, p_q10: qTexts.q10,
+      p_q1_score: qScores.q1_score, p_q2_score: qScores.q2_score, p_q3_score: qScores.q3_score,
+      p_q4_score: qScores.q4_score, p_q5_score: qScores.q5_score, p_q6_score: qScores.q6_score,
+      p_q7_score: qScores.q7_score, p_q8_score: qScores.q8_score, p_q9_score: qScores.q9_score,
+      p_q10_score: qScores.q10_score,
+      p_crit1: critVals[0], p_crit2: critVals[1], p_crit3: critVals[2], p_crit4: critVals[3],
+      p_crit5: critVals[4], p_crit6: critVals[5], p_crit7: critVals[6], p_crit8: critVals[7],
+      p_disc_d_total: discD, p_disc_i_total: discI, p_disc_s_total: discS, p_disc_c_total: discC
+    });
+    if(error) throw error;
+    if(data !== true){
+      errBox.textContent = '更新に失敗しました（権限エラーまたはデータが見つかりません）。ページを再読み込みしてやり直してください。';
+      errBox.style.display = 'block';
+      saveBtn.disabled = false;
+      saveBtn.textContent = '保存する';
+      return;
+    }
+
+    // ---- サーバー側と同じ計算式でローカルの行データも更新し、再読み込みなしで再描画する ----
+    let total = 0, minScore = 99;
+    critVals.forEach((v,i) => { total += v*CRIT_WEIGHTS[i]; if(v<minScore) minScore = v; });
+    total = Math.round(total*10)/10;
+    const pct = Math.round((total/50)*1000)/10;
+    const judge = (total >= 30 && minScore >= 2) ? '◎ 合格基準を満たしています' : '△ 要検討（基準未達の項目があります）';
+
+    Object.assign(r, {
+      candidate_name: candidateName, interview_date: interviewDate, interviewer_name: interviewerName,
+      q1: qTexts.q1, q2: qTexts.q2, q3: qTexts.q3, q4: qTexts.q4, q5: qTexts.q5,
+      q6: qTexts.q6, q7: qTexts.q7, q8: qTexts.q8, q9: qTexts.q9, q10: qTexts.q10,
+      q1_score: qScores.q1_score, q2_score: qScores.q2_score, q3_score: qScores.q3_score,
+      q4_score: qScores.q4_score, q5_score: qScores.q5_score, q6_score: qScores.q6_score,
+      q7_score: qScores.q7_score, q8_score: qScores.q8_score, q9_score: qScores.q9_score,
+      q10_score: qScores.q10_score,
+      crit1: critVals[0], crit2: critVals[1], crit3: critVals[2], crit4: critVals[3],
+      crit5: critVals[4], crit6: critVals[5], crit7: critVals[6], crit8: critVals[7],
+      disc_d_total: discD, disc_i_total: discI, disc_s_total: discS, disc_c_total: discC,
+      weighted_total: total, score_pct: pct, min_score: minScore, judge: judge
+    });
+
+    render();
+    showDetail(r);
+  }catch(err){
+    console.error(err);
+    errBox.textContent = '保存に失敗しました: ' + (err.message || err);
+    errBox.style.display = 'block';
+    saveBtn.disabled = false;
+    saveBtn.textContent = '保存する';
+  }
+}
+
+async function deleteRow(r){
+  if(!confirm(`「${r.candidate_name}」さんの評価結果を削除します。この操作は取り消せません。よろしいですか？`)) return;
+  const btn = document.getElementById('deleteDetail');
+  if(btn){ btn.disabled = true; btn.textContent = '削除中...'; }
+  try{
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await client.rpc('delete_result', { pw: currentPw, p_id: r.id });
+    if(error) throw error;
+    if(data !== true){
+      alert('削除に失敗しました（権限エラーまたはデータが見つかりません）。');
+      if(btn){ btn.disabled = false; btn.textContent = '削除'; }
+      return;
+    }
+    rows = rows.filter(x => x.id !== r.id);
+    document.getElementById('detailModal').classList.remove('show');
+    render();
+  }catch(err){
+    console.error(err);
+    alert('削除に失敗しました: ' + (err.message || err));
+    if(btn){ btn.disabled = false; btn.textContent = '削除'; }
+  }
 }
 
 function truncateText(s, max){
