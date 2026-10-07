@@ -99,6 +99,36 @@
   .sw-box.strengths{background:var(--good-bg);color:var(--good-text);}
   .sw-box.weaknesses{background:var(--critical-bg);color:var(--critical-text);}
 
+  /* ---- compact PDF export layout (shrunk/auto-scaled to fit a single A4 page) ---- */
+  .pdfdoc{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:var(--text);font-size:7.2pt;line-height:1.35;}
+  .pdfdoc *{box-sizing:border-box;}
+  .pdfdoc .ph{background:var(--blue);color:#fff;padding:8px 10px;border-radius:5px;margin-bottom:6px;}
+  .pdfdoc .ph h2{margin:0;font-size:11pt;}
+  .pdfdoc .ph .sub{font-size:7pt;opacity:0.85;margin-top:2px;}
+  .pdfdoc .stats{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:5px;margin-bottom:6px;}
+  .pdfdoc .stat{border:1px solid var(--border);border-radius:4px;padding:5px 6px;background:#fafbfc;}
+  .pdfdoc .stat.ok{background:var(--good-bg);}
+  .pdfdoc .stat.ng{background:var(--critical-bg);}
+  .pdfdoc .stat .l{font-size:6pt;color:var(--ink-muted);font-weight:700;margin-bottom:2px;}
+  .pdfdoc .stat .v{font-size:11pt;font-weight:800;}
+  .pdfdoc .cols2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:6px;align-items:start;}
+  .pdfdoc .box{border:1px solid var(--border);border-radius:4px;padding:6px 7px;}
+  .pdfdoc .box h3{margin:0 0 4px;font-size:6.8pt;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink-secondary);font-weight:700;}
+  .pdfdoc .bar-row{display:grid;grid-template-columns:92px 1fr 16px;align-items:center;gap:4px;margin-bottom:3px;font-size:6.2pt;}
+  .pdfdoc .bar-track{background:#eef1f5;border-radius:3px;height:6px;overflow:hidden;}
+  .pdfdoc .bar-fill{height:100%;}
+  .pdfdoc .disc-badge{display:inline-block;color:#fff;font-size:7.3pt;font-weight:800;padding:2px 8px;border-radius:10px;margin-bottom:4px;}
+  .pdfdoc .profile{font-size:6.2pt;line-height:1.4;color:var(--ink-secondary);margin-top:3px;}
+  .pdfdoc .sw{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+  .pdfdoc .sw .swbox{border-radius:4px;padding:6px 7px;font-size:6.4pt;line-height:1.4;}
+  .pdfdoc .sw .s1{background:var(--good-bg);color:var(--good-text);}
+  .pdfdoc .sw .s2{background:var(--critical-bg);color:var(--critical-text);}
+  .pdfdoc .sw .lbl{display:block;font-size:6pt;font-weight:800;margin-bottom:2px;}
+  .pdfdoc .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+  .pdfdoc .qa-card{border:1px solid var(--border);border-radius:4px;padding:4px 5px;}
+  .pdfdoc .qa-card .ql{font-size:6.1pt;font-weight:700;color:var(--blue-dark);display:flex;justify-content:space-between;}
+  .pdfdoc .qa-card .qt{font-size:6.1pt;color:var(--text);margin-top:2px;line-height:1.35;word-break:break-word;}
+
   /* ---- Q&A cards ---- */
   .qa-card{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
   .qa-card .q-label{background:#f1f5f9;padding:6px 12px;font-size:0.78rem;font-weight:700;color:var(--blue-dark);display:flex;justify-content:space-between;align-items:center;gap:8px;}
@@ -176,6 +206,67 @@ const DISC_META = {
   'S（安定型）': {key:'S', color:'var(--cat-3)', total:'disc_s_total'},
   'C（慎重型）': {key:'C', color:'var(--cat-4)', total:'disc_c_total'},
 };
+
+// ---- より細分化したDISCタイプ判定（D/I/S/Cの素点から主・副タイプと強度を判定し、種類数を増やす） ----
+const TYPE_META = {
+  D: {label:'D（主導型）', short:'主導', color:'var(--cat-1)'},
+  I: {label:'I（感化型）', short:'感化', color:'var(--cat-2)'},
+  S: {label:'S（安定型）', short:'安定', color:'var(--cat-3)'},
+  C: {label:'C（慎重型）', short:'慎重', color:'var(--cat-4)'},
+};
+const DISC_PROFILES = {
+  "D（主導型）": "この人は、スピード感を持って物事を進め、自分で決めて行動することを好むタイプです。結論から話し、要点を絞って判断する傾向があります。指示を細かく出しすぎるより、目標とゴールを明確に伝えたうえで裁量を持たせると力を発揮しやすく、当社の緊急対応業務のように「自分で判断して動く」場面で強みになる可能性があります。一方で、手順の細かい説明を省略しがちな面もあるため、安全手順は明文化して念押しすると良い関わり方になります。",
+  "I（感化型）": "この人は、人当たりが良く、周囲を明るくする力を持つタイプです。初対面でも打ち解けやすく、場の雰囲気をつくるのが得意な傾向があります。お客様（施主・管理会社等）対応や、後輩への声かけなど対人場面で力を発揮しやすい一方、一人で黙々と作業が続く時間が長いと意欲が下がることがあるため、こまめな声かけやチームでの関わりを意識すると定着しやすくなります。",
+  "S（安定型）": "この人は、落ち着いて着実に物事を進めることを好むタイプです。急な変化よりも、決まった手順の中でコツコツ取り組むことに安心感を持ちやすい傾向があります。丁寧なOJTと安定した環境のもとで力を発揮しやすく、長期的な信頼関係を築きながら育成すると定着につながりやすいタイプです。変化や新しい役割を求めるときは、事前に十分な説明と準備期間を設けると良い関わり方になります。",
+  "C（慎重型）": "この人は、正確さや根拠を大切にし、慎重に考えてから行動するタイプです。質問に対して具体的な数字や理由を添えて答える傾向があり、曖昧な指示より基準や手順が明確な方が力を発揮しやすい傾向があります。水質検査など正確性が求められる作業や安全確認の場面と相性が良い可能性がある一方、即断即決を求めすぎると本来の力が出にくいため、考える時間を確保する関わり方が適しています。"
+};
+const DISC_SECONDARY_BLURB = {
+  D: 'また、物事を素早く決めて行動しようとするD（主導型）の傾向も併せ持っています。',
+  I: 'また、人との関わりを楽しみ、場を明るくしようとするI（感化型）の傾向も併せ持っています。',
+  S: 'また、落ち着いて着実に取り組もうとするS（安定型）の傾向も併せ持っています。',
+  C: 'また、正確さや根拠を重視し、慎重に行動しようとするC（慎重型）の傾向も併せ持っています。',
+};
+function classifyDisc(dSum, iSum, sSum, cSum){
+  const sums = [
+    {key:'D', sum:dSum||0},
+    {key:'I', sum:iSum||0},
+    {key:'S', sum:sSum||0},
+    {key:'C', sum:cSum||0},
+  ];
+  const sorted = [...sums].sort((a,b) => b.sum - a.sum);
+  const primary = sorted[0], secondary = sorted[1];
+  const gap = primary.sum - secondary.sum;
+  const isBlend = gap <= 3 && secondary.sum >= 6;
+
+  let intensity;
+  if(primary.sum >= 13) intensity = '非常に強い';
+  else if(primary.sum >= 10) intensity = '強い';
+  else if(primary.sum >= 7) intensity = '標準的な';
+  else intensity = '穏やかな';
+
+  const pMeta = TYPE_META[primary.key];
+  const sMeta = TYPE_META[secondary.key];
+
+  let label, profile;
+  if(isBlend){
+    label = `${primary.key}${secondary.key}型（${pMeta.short}×${sMeta.short}）`;
+    profile = DISC_PROFILES[pMeta.label] + ' ' + DISC_SECONDARY_BLURB[secondary.key];
+  }else{
+    label = `${pMeta.label}（${intensity}傾向）`;
+    let framing;
+    if(intensity === '非常に強い') framing = `${pMeta.label}の特性が非常に強く表れています。`;
+    else if(intensity === '強い') framing = `${pMeta.label}の特性が強く表れています。`;
+    else if(intensity === '標準的な') framing = `${pMeta.label}の特性が最も強く出ていますが、突出した偏りではなく標準的な範囲です。`;
+    else framing = `${pMeta.label}の傾向が相対的に高いものの、全体として控えめ・穏やかな反応が多く見られました。`;
+    profile = framing + ' ' + DISC_PROFILES[pMeta.label];
+  }
+
+  return {
+    label, profile, isBlend,
+    primaryKey: primary.key, secondaryKey: secondary.key,
+    primaryColor: pMeta.color, secondaryColor: sMeta.color,
+  };
+}
 
 const SQ_SHORT = SQ_LABELS.map(l => l.replace(/^Q\d+\.\s*/, ''));
 
@@ -301,7 +392,7 @@ function render(){
       <td>${r.weighted_total}</td>
       <td>${r.score_pct}%</td>
       <td><span class="badge ${badgeClass}">${escapeHtml(r.judge)}</span></td>
-      <td>${escapeHtml(r.disc_type)}</td>
+      <td>${escapeHtml(classifyDisc(r.disc_d_total, r.disc_i_total, r.disc_s_total, r.disc_c_total).label)}</td>
       <td>${new Date(r.created_at).toLocaleString('ja-JP')}</td>
     `;
     tr.addEventListener('click', () => showDetail(r));
@@ -336,27 +427,32 @@ function showDetail(r){
   `;
 
   // ---- DISC bar chart (categorical, fixed order D/I/S/C) ----
+  const discResult = classifyDisc(r.disc_d_total, r.disc_i_total, r.disc_s_total, r.disc_c_total);
   const discMax = 15;
   const discOrder = ['D（主導型）','I（感化型）','S（安定型）','C（慎重型）'];
   const discBars = discOrder.map(type => {
     const meta = DISC_META[type];
     const total = r[meta.total] || 0;
     const pct = Math.round((total / discMax) * 100);
-    const isType = r.disc_type === type;
+    const isPrimary = meta.key === discResult.primaryKey;
+    const isSecondary = discResult.isBlend && meta.key === discResult.secondaryKey;
+    const labelStyle = isPrimary ? `font-weight:800;color:${meta.color};` : isSecondary ? `font-weight:700;color:${meta.color};opacity:0.85;` : '';
     return `
       <div class="bar-row">
-        <span class="bar-label" style="${isType ? 'font-weight:800;color:'+meta.color+';' : ''}">${type}</span>
+        <span class="bar-label" style="${labelStyle}">${type}</span>
         <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${meta.color};"></div></div>
         <span class="bar-value">${total}</span>
       </div>`;
   }).join('');
-  const discTypeMeta = DISC_META[r.disc_type] || {color:'var(--blue)'};
+  const discBadgeBg = discResult.isBlend
+    ? `linear-gradient(90deg, ${discResult.primaryColor}, ${discResult.secondaryColor})`
+    : discResult.primaryColor;
   const discHtml = `
     <div class="d-section">
       <h3>DISCタイプ判定</h3>
-      <span class="disc-badge" style="background:${discTypeMeta.color};">${escapeHtml(r.disc_type)}</span>
+      <span class="disc-badge" style="background:${discBadgeBg};">${escapeHtml(discResult.label)}</span>
       ${discBars}
-      <div class="disc-profile">${escapeHtml(r.disc_profile)}</div>
+      <div class="disc-profile">${escapeHtml(discResult.profile)}</div>
     </div>
   `;
 
@@ -424,9 +520,108 @@ function showDetail(r){
   document.getElementById('pdfDetail').addEventListener('click', () => downloadDetailPdf(r));
 }
 
+function truncateText(s, max){
+  if(s === null || s === undefined) return '';
+  s = String(s);
+  if(s.length <= max) return s;
+  return s.slice(0, max - 1) + '…';
+}
+
+// ---- PDF専用のコンパクトな1枚レイアウトを生成する（画面表示用のshowDetailとは別に組み立てる） ----
+function buildPdfHtml(r){
+  const isPass = (r.judge || '').indexOf('◎') === 0;
+  const judgeClass = isPass ? 'ok' : 'ng';
+  const judgeIcon = isPass ? '◎' : '△';
+
+  const statHtml = `
+    <div class="stats">
+      <div class="stat">
+        <div class="l">加重合計点</div>
+        <div class="v">${r.weighted_total}<span style="font-size:7pt;font-weight:700;">点/${r.score_pct}%</span></div>
+      </div>
+      <div class="stat ${judgeClass}">
+        <div class="l">合否判定</div>
+        <div class="v">${judgeIcon} <span style="font-size:7pt;">${escapeHtml(r.judge)}</span></div>
+      </div>
+      <div class="stat">
+        <div class="l">最低得点</div>
+        <div class="v">${r.min_score}<span style="font-size:7pt;font-weight:700;">点</span></div>
+      </div>
+    </div>
+  `;
+
+  const critBars = CRIT_LABELS.map((label, i) => {
+    const v = r['crit' + (i + 1)];
+    const pct = Math.round((v / 5) * 100);
+    return `
+      <div class="bar-row">
+        <span>${label.replace(/（ウエイト[^）]*）/, '')}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${SEQ_STEPS[v] || 'var(--seq-3)'};"></div></div>
+        <span style="text-align:right;font-weight:700;">${v}</span>
+      </div>`;
+  }).join('');
+
+  const discResult = classifyDisc(r.disc_d_total, r.disc_i_total, r.disc_s_total, r.disc_c_total);
+  const discMax = 15;
+  const discOrder = ['D（主導型）', 'I（感化型）', 'S（安定型）', 'C（慎重型）'];
+  const discBars = discOrder.map(type => {
+    const meta = DISC_META[type];
+    const total = r[meta.total] || 0;
+    const pct = Math.round((total / discMax) * 100);
+    return `
+      <div class="bar-row">
+        <span>${type}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${meta.color};"></div></div>
+        <span style="text-align:right;font-weight:700;">${total}</span>
+      </div>`;
+  }).join('');
+  const discBadgeBg = discResult.isBlend
+    ? `linear-gradient(90deg, ${discResult.primaryColor}, ${discResult.secondaryColor})`
+    : discResult.primaryColor;
+
+  const critValsForSw = [r.crit1, r.crit2, r.crit3, r.crit4, r.crit5, r.crit6, r.crit7, r.crit8];
+  const qScoresForSw = [r.q1_score, r.q2_score, r.q3_score, r.q4_score, r.q5_score, r.q6_score, r.q7_score, r.q8_score, r.q9_score, r.q10_score];
+  const sw = buildStrengthsWeaknesses(critValsForSw, qScoresForSw, SQ_SHORT);
+
+  let qaHtml = '';
+  for(let i = 1; i <= 10; i++){
+    const v = r['q' + i];
+    const score = r['q' + i + '_score'];
+    if(!v && !score) continue;
+    const scoreBadge = score ? `<span style="background:${SEQ_STEPS[score] || 'var(--seq-3)'};color:#fff;border-radius:6px;padding:0 4px;">${score}</span>` : '';
+    const noteText = v ? escapeHtml(truncateText(v, 85)) : '(メモなし)';
+    qaHtml += `<div class="qa-card"><div class="ql"><span>${SQ_SHORT[i - 1]}</span>${scoreBadge}</div><div class="qt">${noteText}</div></div>`;
+  }
+  const qaSection = qaHtml ? `<div class="box" style="margin-bottom:6px;"><h3>標準質問10選 メモ</h3><div class="qa-grid">${qaHtml}</div></div>` : '';
+
+  return `
+    <div class="ph">
+      <h2>${escapeHtml(r.candidate_name)}</h2>
+      <div class="sub">${escapeHtml(r.interview_date)} ／ 面接官: ${escapeHtml(r.interviewer_name)}</div>
+    </div>
+    ${statHtml}
+    <div class="cols2">
+      <div class="box">
+        <h3>評価シート（8項目）</h3>
+        ${critBars}
+      </div>
+      <div class="box">
+        <h3>DISCタイプ判定</h3>
+        <span class="disc-badge" style="background:${discBadgeBg};">${escapeHtml(discResult.label)}</span>
+        ${discBars}
+        <div class="profile">${escapeHtml(truncateText(discResult.profile, 170))}</div>
+      </div>
+    </div>
+    <div class="sw">
+      <div class="swbox s1"><span class="lbl">長所</span>${escapeHtml(truncateText(sw.strengths, 180))}</div>
+      <div class="swbox s2"><span class="lbl">短所</span>${escapeHtml(truncateText(sw.weaknesses, 180))}</div>
+    </div>
+    ${qaSection}
+  `;
+}
+
 function downloadDetailPdf(r){
   const btn = document.getElementById('pdfDetail');
-  const el = document.getElementById('detailInner');
   const origText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '作成中...';
@@ -434,25 +629,68 @@ function downloadDetailPdf(r){
   const safeName = String(r.candidate_name || '候補者').replace(/[\\/:*?"<>|]/g, '_');
   const safeDate = String(r.interview_date || '').replace(/[\\/:*?"<>|]/g, '_');
 
+  // ---- A4 1枚に収まるよう専用のコンパクトレイアウトで生成し、収まりきらない場合は自動縮小する ----
+  const MM_TO_PX = 3.7795275591;
+  const MARGIN_MM = 8;
+  const contentWpx = Math.round((210 - MARGIN_MM * 2) * MM_TO_PX);
+  const contentHpx = Math.round((297 - MARGIN_MM * 2) * MM_TO_PX);
+
+  const stage = document.createElement('div');
+  stage.className = 'pdfdoc';
+  stage.style.position = 'fixed';
+  stage.style.left = '-10000px';
+  stage.style.top = '0';
+  stage.style.width = contentWpx + 'px';
+  stage.innerHTML = buildPdfHtml(r);
+  document.body.appendChild(stage);
+
+  let naturalHeight = stage.scrollHeight;
+  let scale = 1;
+
+  if(naturalHeight > contentHpx){
+    scale = contentHpx / naturalHeight;
+    const widerWidth = Math.ceil(contentWpx / scale);
+    stage.style.width = widerWidth + 'px';
+    naturalHeight = stage.scrollHeight;
+  }
+
+  document.body.removeChild(stage);
+  stage.style.position = 'static';
+  stage.style.left = '';
+  stage.style.top = '';
+  stage.style.transformOrigin = 'top left';
+  if(scale < 1) stage.style.transform = `scale(${scale})`;
+
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = '-10000px';
+  wrapper.style.top = '0';
+  wrapper.style.width = contentWpx + 'px';
+  wrapper.style.height = Math.min(Math.round(naturalHeight * scale), contentHpx) + 'px';
+  wrapper.style.overflow = 'hidden';
+  wrapper.appendChild(stage);
+  document.body.appendChild(wrapper);
+
   const opt = {
-    margin: [10, 8, 10, 8],
+    margin: [MARGIN_MM, MARGIN_MM, MARGIN_MM, MARGIN_MM],
     filename: `スイカン面接評価_${safeName}_${safeDate}.pdf`,
     image: { type: 'png' },
     html2canvas: {
       scale: 3,
       useCORS: true,
-      backgroundColor: '#ffffff',
-      ignoreElements: (element) => element.classList && element.classList.contains('no-pdf')
+      backgroundColor: '#ffffff'
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    pagebreak: { mode: ['avoid-all'] }
   };
 
-  html2pdf().set(opt).from(el).save().then(() => {
+  html2pdf().set(opt).from(wrapper).save().then(() => {
+    document.body.removeChild(wrapper);
     btn.disabled = false;
     btn.textContent = origText;
   }).catch((err) => {
     console.error(err);
+    if(wrapper.parentNode) document.body.removeChild(wrapper);
     btn.disabled = false;
     btn.textContent = origText;
     alert('PDFの作成に失敗しました: ' + (err.message || err));
