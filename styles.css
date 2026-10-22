@@ -1,0 +1,198 @@
+/* ==========================================================================
+   スイカン 面接評価システム — 共通デザインシステム
+   index.html / results.html の両方から読み込まれる共有スタイル。
+   ページ固有のスタイル（質問カード、テーブル、編集フォーム、PDFレイアウト等）は
+   各HTMLファイル側の <style> に残しているが、このファイルが定義するトークンと
+   コンポーネントクラスは両ページで同じ見え方をするように統一している。
+   ========================================================================== */
+
+:root{
+  /* ---- brand（深みを持たせた上品なティール。原色寄りの明るいティールより
+     管理系ツールとしての信頼感・落ち着きを優先） ---- */
+  --blue:#0c7d72;
+  --blue-dark:#085f57;
+  --blue-light:#e7f4f2;      /* ブランドの淡色背景（テーブルヘッダ・補足ボックス等） */
+
+  /* ---- neutrals（1系統に統一。以前はink-*/muted/textが別々の濃淡で
+     混在しており、同じ意味合いの要素でも微妙に色が揃っていなかった） ---- */
+  --bg:#f5f6f8;
+  --card:#ffffff;
+  --border:#e4e8ee;
+  --surface-subtle:#f7f8fa;  /* カード内のネストした淡色サーフェス */
+  --track-bg:#edf0f4;        /* バーチャートの下地 */
+  --text:#1f2430;
+  --muted:#667085;
+  --ink-primary:#0f1522;
+  --ink-secondary:#475467;
+  --ink-muted:#98a2b3;
+
+  /* ---- status（視認性を保ちつつ、派手すぎない落ち着いたトーンに調整） ---- */
+  --good:#0f7a3d;
+  --good-bg:#eefaf1;
+  --good-text:#0f7a3d;
+  --good-border:#bfe8cc;
+  --critical:#b42318;
+  --critical-bg:#fdf1f0;
+  --critical-text:#b42318;
+  --critical-border:#f3c6c1;
+
+  /* ---- categorical（DISC D/I/S/C。順序固定・白文字バッジでも
+     本文色としても十分なコントラストを確保したトーン） ---- */
+  --cat-1:#1d4ed8; /* D 主導型 — ディープブルー */
+  --cat-2:#c2410c; /* I 感化型 — バーントオレンジ */
+  --cat-3:#047857; /* S 安定型 — ディープエメラルド */
+  --cat-4:#a1580a; /* C 慎重型 — ブロンズアンバー */
+
+  /* ---- sequential（1〜5点の加重バー用ブルーランプ） ---- */
+  --seq-1:#bfdbfe;--seq-2:#8fc1fb;--seq-3:#5a9df5;--seq-4:#2563eb;--seq-5:#1e3a8a;
+
+  /* ---- scale tokens（新規・JSからは参照されないため自由に設計） ---- */
+  --radius-sm:8px;
+  --radius-md:11px;
+  --radius-lg:16px;
+  --shadow-card:0 1px 2px rgba(16,24,40,0.04),0 2px 6px -2px rgba(16,24,40,0.06);
+  --shadow-float:0 12px 28px -10px rgba(16,24,40,0.18);
+  --shadow-focus:0 0 0 3px rgba(12,125,114,0.16);
+}
+
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.65;
+  font-size:15px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------------------------------------------------------------- header */
+header{
+  background:var(--blue);
+  color:#fff;
+  padding:20px 20px 22px;
+  box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 6px 18px -12px rgba(8,95,87,0.6);
+  position:relative;
+}
+header h1{margin:2px auto 0;max-width:1000px;font-size:1.3rem;font-weight:800;letter-spacing:0.01em;}
+header p{margin:7px auto 0;max-width:1000px;font-size:0.85rem;color:rgba(255,255,255,0.82);}
+nav.top{max-width:1000px;margin:0 auto 12px;padding:0;display:flex;gap:6px;flex-wrap:wrap;}
+nav.top a{color:rgba(255,255,255,0.78);text-decoration:none;font-size:0.82rem;font-weight:600;padding:7px 15px;border-radius:999px;transition:background 0.15s,color 0.15s;}
+nav.top a.active{background:#fff;color:var(--blue-dark);}
+nav.top a:not(.active):hover{background:rgba(255,255,255,0.14);color:#fff;}
+
+main{max-width:1000px;margin:0 auto;padding:24px 16px 88px;}
+
+/* ----------------------------------------------------------------- card */
+.card,section.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:24px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow-card);
+}
+section.card h2{
+  margin:0 0 16px;
+  font-size:1.08rem;
+  font-weight:700;
+  color:var(--ink-primary);
+  padding-left:13px;
+  border-left:3px solid var(--blue);
+  line-height:1.3;
+}
+@media (max-width:600px){
+  .card,section.card{padding:18px;border-radius:var(--radius-md);}
+  main{padding:18px 14px 80px;}
+}
+
+/* ---------------------------------------------------------------- forms */
+.field{margin-bottom:18px;}
+.field:last-child{margin-bottom:0;}
+.field label.title{display:block;font-weight:600;margin-bottom:7px;font-size:0.92rem;color:var(--ink-primary);}
+.field .help{white-space:pre-wrap;font-size:0.8rem;line-height:1.6;color:var(--ink-secondary);margin:5px 0 9px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;}
+
+input[type=text],input[type=date],input[type=password],input[type=number],textarea{
+  width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:0.95rem;font-family:inherit;color:var(--text);background:#fff;
+  transition:border-color 0.12s,box-shadow 0.12s;
+}
+input[type=text]:focus,input[type=date]:focus,input[type=password]:focus,input[type=number]:focus,textarea:focus{
+  outline:none;border-color:var(--blue);box-shadow:var(--shadow-focus);
+}
+textarea{min-height:72px;resize:vertical;line-height:1.6;}
+
+.required{display:inline-flex;align-items:center;background:var(--critical-bg);color:var(--critical-text);font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:7px;vertical-align:middle;letter-spacing:0.02em;}
+
+/* ---- 1〜5点スケール選択（セグメントコントロール風に統一） ---- */
+.scale{display:flex;gap:7px;flex-wrap:wrap;}
+.scale label{
+  flex:1;min-width:58px;text-align:center;border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 4px 9px;cursor:pointer;font-size:0.9rem;font-weight:700;color:var(--ink-secondary);
+  user-select:none;background:#fff;
+  transition:background 0.12s,border-color 0.12s,color 0.12s,box-shadow 0.12s,transform 0.08s;
+}
+.scale label:hover{border-color:var(--blue);background:var(--blue-light);}
+.scale input{display:none;}
+.scale label.sel{background:var(--blue);color:#fff;border-color:var(--blue-dark);box-shadow:0 3px 10px -3px rgba(12,125,114,0.55);transform:translateY(-1px);}
+.scale small{display:block;color:var(--ink-muted);font-size:0.66rem;font-weight:600;margin-top:3px;}
+.scale label.sel small{color:rgba(255,255,255,0.88);}
+.scale-caption{display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-top:4px;}
+
+/* ------------------------------------------------------------- buttons
+   ピル型（999px）は「ナビタブ」「バッジ・タグ」専用とし、操作ボタンは
+   角丸矩形（radius-sm）に統一。ピルの多用はカジュアルな消費者向けアプリの
+   印象になりやすく、社内の業務ツールとしてはやや軽く見えるための調整。 */
+button.submit{
+  width:100%;background:var(--blue);color:#fff;border:none;padding:16px;font-size:1rem;
+  border-radius:var(--radius-md);cursor:pointer;font-weight:700;letter-spacing:0.02em;
+  box-shadow:0 10px 20px -10px rgba(12,125,114,0.55);transition:background 0.15s,transform 0.1s,box-shadow 0.15s;
+}
+button.submit:disabled{opacity:0.55;cursor:default;box-shadow:none;}
+button.submit:hover:not(:disabled){background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 14px 24px -10px rgba(12,125,114,0.6);}
+button.submit:active:not(:disabled){transform:translateY(0);}
+
+.msg{margin-top:14px;padding:13px 15px;border-radius:var(--radius-sm);font-size:0.9rem;display:none;line-height:1.6;}
+.msg.ok{background:var(--good-bg);color:var(--good-text);border:1px solid var(--good-border);}
+.msg.err{background:var(--critical-bg);color:var(--critical-text);border:1px solid var(--critical-border);}
+
+/* -------------------------------------------------- 自動採点結果の共通部品
+   （index.html のインライン結果表示 / results.html の詳細モーダル の両方で
+   同一の見た目になるよう、クラス名も中身もここで統一管理する） */
+.stat-row{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;}
+.stat-tile{border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius-md);padding:14px 15px;background:var(--surface-subtle);}
+.stat-tile .label{font-size:0.72rem;color:var(--ink-muted);font-weight:700;margin-bottom:7px;letter-spacing:0.02em;}
+.stat-tile .value{font-size:2rem;font-weight:800;line-height:1;color:var(--ink-primary);font-variant-numeric:tabular-nums;}
+.stat-tile .value small{font-size:0.92rem;font-weight:700;color:var(--ink-secondary);margin-left:3px;}
+.stat-tile.judge-ok{background:var(--good-bg);border-color:var(--good-border);border-left-color:var(--good-text);}
+.stat-tile.judge-ng{background:var(--critical-bg);border-color:var(--critical-border);border-left-color:var(--critical-text);}
+.stat-tile.judge-ok .value{color:var(--good-text);}
+.stat-tile.judge-ng .value{color:var(--critical-text);}
+.stat-tile .judge-text{font-size:0.85rem;font-weight:700;margin-top:3px;}
+.stat-tile.warn-min{border-left-color:var(--critical-text);}
+.stat-tile.warn-min .value{color:var(--critical-text);}
+.stat-tile.warn-min .label::after{content:" ⚠";}
+
+.disc-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;font-size:1rem;font-weight:800;color:#fff;margin-bottom:14px;letter-spacing:0.01em;box-shadow:0 4px 10px -4px rgba(15,23,42,0.35);}
+
+.bar-row{display:grid;grid-template-columns:172px 1fr 40px;align-items:center;gap:10px;margin-bottom:10px;font-size:0.8rem;}
+.bar-row .bar-label{color:var(--ink-secondary);font-weight:600;white-space:normal;line-height:1.3;}
+.bar-track{background:var(--track-bg);border-radius:6px;height:11px;overflow:hidden;position:relative;}
+.bar-fill{height:100%;border-radius:6px 0 0 6px;transition:width 0.45s cubic-bezier(.4,0,.2,1);}
+.bar-row .bar-value{text-align:right;font-weight:700;color:var(--ink-primary);font-variant-numeric:tabular-nums;}
+.bar-row .bar-weight{color:var(--ink-muted);font-weight:500;font-size:0.72rem;}
+
+.disc-profile{background:var(--surface-subtle);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px 15px;font-size:0.86rem;line-height:1.75;color:var(--ink-secondary);margin-top:11px;}
+
+.sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+.sw-box{border-radius:var(--radius-md);padding:14px 16px;font-size:0.86rem;line-height:1.75;border-left:3px solid transparent;}
+.sw-box .sw-label{display:block;font-size:0.72rem;font-weight:800;margin-bottom:7px;letter-spacing:0.03em;}
+.sw-box.strengths{background:var(--good-bg);color:var(--good-text);border-left-color:var(--good-text);}
+.sw-box.weaknesses{background:var(--critical-bg);color:var(--critical-text);border-left-color:var(--critical-text);}
+
+@media (max-width:480px){
+  .stat-row{grid-template-columns:1fr 1fr;}
+  .bar-row{grid-template-columns:104px 1fr 36px;font-size:0.72rem;}
+  .sw-grid{grid-template-columns:1fr;}
+}
